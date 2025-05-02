@@ -4,6 +4,7 @@ import '../../models/user.dart';
 import '../../models/user_type.dart';
 import '../../services/auth_service.dart';
 import '../employer/employer_dashboard.dart';
+import '../helper/helper_dashboard.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,24 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
       ),
-      extendBodyBehindAppBar: true,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.7),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.5),
-            ],
-          ),
-        ),
+        color: Colors.white,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -68,18 +59,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 30),
                 Text(
                   'Welcome back, ${widget.userType == UserType.employer ? 'Employer' : 'Helper'}!',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Log in to continue to WeCare',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white,
+                    color: Colors.grey[700],
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -121,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: Colors.grey,
+                            color: Colors.grey[600],
                           ),
                           onPressed: () {
                             setState(() {
@@ -146,10 +137,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             // Implement forgot password functionality
                           },
-                          child: const Text(
+                          child: Text(
                             'Forgot Password?',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -163,9 +154,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor:
+                            backgroundColor:
                                 Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -177,9 +168,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 24,
                                     width: 24,
                                     child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Theme.of(context).colorScheme.primary,
-                                      ),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -198,15 +190,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: RichText(
                           text: TextSpan(
                             text: 'Don\'t have an account? ',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Colors.grey[700],
                               fontSize: 14,
                             ),
                             children: [
                               TextSpan(
                                 text: 'Register',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                   decoration: TextDecoration.underline,
                                 ),
@@ -257,23 +249,29 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        labelStyle: const TextStyle(color: Colors.white),
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-        prefixIcon: Icon(prefixIcon, color: Colors.white),
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        prefixIcon: Icon(
+          prefixIcon,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.3),
+        fillColor: Colors.grey[100],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white, width: 1),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -281,9 +279,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
-        errorStyle: const TextStyle(color: Colors.white),
+        errorStyle: const TextStyle(color: Colors.redAccent),
       ),
       validator: validator,
     );
@@ -327,10 +325,13 @@ class _LoginScreenState extends State<LoginScreen> {
               (route) => false,
             );
           } else {
-            // Navigate to helper dashboard when implemented
-            // For now, show a snackbar
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Helper dashboard coming soon!')),
+            // Navigate to helper dashboard
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HelperDashboard(helper: user),
+              ),
+              (route) => false,
             );
           }
         }

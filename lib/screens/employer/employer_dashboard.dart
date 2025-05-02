@@ -3,6 +3,8 @@ import '../../models/user.dart';
 import '../../models/job.dart';
 import '../../services/auth_service.dart';
 import '../../services/job_service.dart';
+import '../auth/auth_screen.dart';
+import '../chat/conversations_list_screen.dart';
 import 'job_posting_screen.dart';
 import 'my_jobs_screen.dart';
 import 'applications_screen.dart';
@@ -224,7 +226,23 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
                           },
                           icon: Icons.people,
                           label: 'Applications',
-                          color: Colors.green,
+                          color: Colors.amber[700]!,
+                        ),
+                        _buildActionButton(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ConversationsListScreen(
+                                      currentUser: widget.employer,
+                                    ),
+                              ),
+                            );
+                          },
+                          icon: Icons.chat,
+                          label: 'Messages',
+                          color: Colors.green[600]!,
                         ),
                       ],
                     ),
@@ -478,10 +496,35 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
   }
 
   Future<void> _handleLogout() async {
-    await AuthService.logout();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Logout'),
+              ),
+            ],
+          ),
+    );
 
-    if (mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    if (confirmed == true) {
+      await AuthService.logout();
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 }

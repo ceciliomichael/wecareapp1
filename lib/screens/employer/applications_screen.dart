@@ -174,15 +174,13 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       application: app,
                       job: job,
                       helper: helper,
+                      employer: widget.employer,
+                      isEmployerView: true,
                       onStatusChange:
                           app.status == 'pending'
                               ? (newStatus) =>
                                   _updateApplicationStatus(app.id, newStatus)
                               : null,
-                      onViewDetails: () {
-                        // Show application details dialog
-                        _showApplicationDetailsDialog(app, job, helper);
-                      },
                     ),
                   );
                 }).toList(),

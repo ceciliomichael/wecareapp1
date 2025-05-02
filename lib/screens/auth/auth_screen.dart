@@ -12,16 +12,7 @@ class AuthScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.7),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.5),
-            ],
-          ),
-        ),
+        color: Colors.white,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -37,31 +28,31 @@ class AuthScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 // App Name
-                const Text(
+                Text(
                   'WeCare',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 // Tagline
-                const Text(
+                Text(
                   'Connecting Helpers & Employers',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white,
+                    color: Colors.grey[700],
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 60),
                 // User Type Selection
-                const Text(
+                Text(
                   'Continue as',
                   style: TextStyle(
                     fontSize: 20,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -90,10 +81,7 @@ class AuthScreen extends StatelessWidget {
                   child: Text(
                     'By continuing, you agree to our Terms of Service and Privacy Policy',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ),
               ],
@@ -119,9 +107,10 @@ class AuthScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -163,7 +152,7 @@ class AuthScreen extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.primary,
               size: 16,
             ),
           ],
@@ -186,17 +175,18 @@ class AuthScreen extends StatelessWidget {
             children: [
               Text(
                 'Welcome ${userType == UserType.employer ? 'Employer' : 'Helper'}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 20),
               _buildAuthButton(
                 context,
                 'Log In',
-                Colors.white,
                 Theme.of(context).colorScheme.primary,
+                Colors.white,
                 () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -211,8 +201,8 @@ class AuthScreen extends StatelessWidget {
               _buildAuthButton(
                 context,
                 'Register',
-                Theme.of(context).colorScheme.primary,
                 Colors.white,
+                Theme.of(context).colorScheme.primary,
                 () {
                   Navigator.pop(context);
                   Navigator.push(

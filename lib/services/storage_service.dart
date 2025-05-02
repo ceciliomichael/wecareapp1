@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 
@@ -102,6 +103,36 @@ class StorageService {
     } catch (e) {
       return null;
     }
+  }
+
+  // Save a string value
+  static Future<void> setString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  // Get a string value
+  static Future<String?> getString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  // Save a JSON value
+  static Future<void> setJson(String key, Map<String, dynamic> value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, json.encode(value));
+  }
+
+  // Get a JSON value
+  static Future<Map<String, dynamic>?> getJson(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? jsonString = prefs.getString(key);
+
+    if (jsonString == null) {
+      return null;
+    }
+
+    return Map<String, dynamic>.from(json.decode(jsonString));
   }
 
   // Clear all stored data (logout)

@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/job.dart';
 import '../models/user.dart';
+import '../services/application_service.dart';
 
 class JobService {
   static const String _jobsKey = 'jobs';
@@ -110,13 +111,13 @@ class JobService {
   }
 
   // Get a job by ID
-  static Future<Job> getJobById(String jobId) async {
+  static Future<Job?> getJobById(String jobId) async {
     final jobs = await getJobs();
-    final job = jobs.firstWhere(
-      (job) => job.id == jobId,
-      orElse: () => throw Exception('Job not found'),
-    );
-    return job;
+    try {
+      return jobs.firstWhere((job) => job.id == jobId);
+    } catch (e) {
+      return null;
+    }
   }
 
   // Search jobs by title or skills
@@ -131,5 +132,34 @@ class JobService {
             (skill) => skill.toLowerCase().contains(lowercaseQuery),
           );
     }).toList();
+  }
+
+  // Apply for a job
+  static Future<void> applyForJob(
+    String jobId,
+    String helperId,
+    String coverLetter,
+  ) async {
+    try {
+      // Check if job exists and is active
+      final job = await getJobById(jobId);
+      if (job == null) {
+        throw Exception('Job not found');
+      }
+
+      if (!job.isActive) {
+        throw Exception('This job is no longer accepting applications');
+      }
+
+      // Create application using ApplicationService
+      await ApplicationService.createApplication(
+        jobId: jobId,
+        helperId: helperId,
+        coverLetter: coverLetter,
+      );
+    } catch (e) {
+      // Rethrow the exception with more context
+      throw Exception('Failed to submit application: ${e.toString()}');
+    }
   }
 }

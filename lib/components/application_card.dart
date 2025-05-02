@@ -4,13 +4,16 @@ import 'package:intl/intl.dart';
 import '../models/application.dart';
 import '../models/job.dart';
 import '../models/user.dart';
+import '../services/message_service.dart';
+import '../screens/chat/chat_screen.dart';
 
 class ApplicationCard extends StatelessWidget {
   final Application application;
   final Job job;
   final User helper;
   final Function(String)? onStatusChange;
-  final VoidCallback? onViewDetails;
+  final bool isEmployerView;
+  final User? employer;
 
   const ApplicationCard({
     Key? key,
@@ -18,7 +21,8 @@ class ApplicationCard extends StatelessWidget {
     required this.job,
     required this.helper,
     this.onStatusChange,
-    this.onViewDetails,
+    this.isEmployerView = true,
+    this.employer,
   }) : super(key: key);
 
   @override
@@ -28,7 +32,7 @@ class ApplicationCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: onViewDetails,
+        onTap: () => _openChat(context),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -160,13 +164,27 @@ class ApplicationCard extends StatelessWidget {
                     }).toList(),
                 ],
               ),
-              // Action buttons (accept/reject)
-              if (onStatusChange != null &&
-                  application.status == 'pending') ...[
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+              // Action buttons
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Message button
+                  ElevatedButton.icon(
+                    onPressed: () => _openChat(context),
+                    icon: const Icon(Icons.chat, size: 18),
+                    label: const Text('Message'),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.teal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Accept/Reject buttons (only for employer view and pending applications)
+                  if (onStatusChange != null &&
+                      isEmployerView &&
+                      application.status == 'pending') ...[
                     TextButton.icon(
                       onPressed: () => onStatusChange!('rejected'),
                       icon: const Icon(Icons.close, color: Colors.red),
@@ -190,8 +208,8 @@ class ApplicationCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ],
           ),
         ),
@@ -241,6 +259,44 @@ class ApplicationCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openChat(BuildContext context) async {
+    if (employer == null && isEmployerView) {
+      return; // Can't open chat without employer
+    }
+
+    final currentUser = isEmployerView ? employer! : helper;
+    final otherUser = isEmployerView ? helper : employer!;
+
+    final messageService = MessageService();
+
+    try {
+      // Create or get existing conversation
+      final conversation = await messageService.getOrCreateConversation(
+        job.employerId,
+        helper.id,
+        job.id,
+      );
+
+      // Navigate to chat screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ChatScreen(
+                conversation: conversation,
+                currentUser: currentUser,
+                otherUser: otherUser,
+                jobTitle: job.title,
+              ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error opening chat: $e')));
+    }
   }
 }
 

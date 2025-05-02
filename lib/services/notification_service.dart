@@ -1,0 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
+
+class NotificationService {
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static Future<void> initialize() async {
+    tz_data.initializeTimeZones();
+
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon');
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: null,
+        );
+
+    await _notificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (
+        NotificationResponse notificationResponse,
+      ) {
+        // Handle notification tap
+        final String? payload = notificationResponse.payload;
+        if (payload != null) {
+          debugPrint('Notification payload: $payload');
+          // You can navigate to a specific screen here based on the payload
+        }
+      },
+    );
+  }
+
+  static Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'wecare_channel',
+          'WeCare Notifications',
+          channelDescription: 'Notifications from WeCare app',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+        );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: payload,
+    );
+  }
+
+  static Future<void> scheduleNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    String? payload,
+  }) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'wecare_channel',
+          'WeCare Notifications',
+          channelDescription: 'Notifications from WeCare app',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    await _notificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(scheduledDate, tz.local),
+      platformChannelSpecifics,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+  }
+
+  static Future<void> cancelNotification(int id) async {
+    await _notificationsPlugin.cancel(id);
+  }
+
+  static Future<void> cancelAllNotifications() async {
+    await _notificationsPlugin.cancelAll();
+  }
+}
