@@ -27,12 +27,13 @@ class WeCareApp extends StatelessWidget {
       title: 'WeCare',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF66BB6A),
-          primary: const Color(0xFF26A69A),
-          secondary: const Color(0xFF80CBC4),
+          seedColor: const Color(0xFF0050AA), // Deep blue from logo
+          primary: const Color(0xFF0050AA), // Deep blue for primary elements
+          secondary: const Color(0xFFF88C24), // Orange for accent elements
+          tertiary: const Color(0xFF2C96EE), // Light blue from "We" in logo
           background: const Color(0xFFF5F5F5),
           brightness: Brightness.light,
         ),
