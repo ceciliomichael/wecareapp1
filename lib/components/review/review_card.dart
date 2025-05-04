@@ -39,8 +39,8 @@ class _ReviewCardState extends State<ReviewCard> {
     try {
       final users = await StorageService.getUsers();
       try {
-        _reviewer = users.firstWhere(
-          (user) => user.id == widget.review.reviewerId,
+      _reviewer = users.firstWhere(
+        (user) => user.id == widget.review.reviewerId,
         );
       } catch (e) {
         // Create a placeholder user if reviewer not found
@@ -84,18 +84,18 @@ class _ReviewCardState extends State<ReviewCard> {
               }
             },
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child:
-              _isLoading
-                  ? const Center(
-                    child: SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                  : _buildReviewContent(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child:
+            _isLoading
+                ? const Center(
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+                : _buildReviewContent(),
         ),
       ),
     );
@@ -112,7 +112,7 @@ class _ReviewCardState extends State<ReviewCard> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _buildReviewerAvatar(),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

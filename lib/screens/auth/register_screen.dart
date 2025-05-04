@@ -22,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _companyNameController = TextEditingController();
   final _addressController = TextEditingController();
 
   String? _selectedSkill;
@@ -42,7 +41,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _companyNameController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -89,15 +87,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password: _passwordController.text,
           userType: widget.userType,
           photoUrl: _profileImageBase64,
-          nbiClearance:
-              widget.userType == UserType.employer ? _nbiClearanceBase64 : null,
+          nbiClearance: _nbiClearanceBase64,
           skills: skills,
           experience:
               widget.userType == UserType.helper ? _selectedExperience : null,
-          companyName:
-              widget.userType == UserType.employer
-                  ? _companyNameController.text
-                  : null,
           address:
               widget.userType == UserType.employer
                   ? _addressController.text
@@ -318,99 +311,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       // Employer-specific fields
                       if (widget.userType == UserType.employer) ...[
                         _buildTextField(
-                          controller: _companyNameController,
-                          labelText: 'Company Name',
-                          hintText: 'Enter your company name (optional)',
-                          prefixIcon: Icons.business_outlined,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildTextField(
                           controller: _addressController,
                           labelText: 'Address',
                           hintText: 'Enter your address',
                           prefixIcon: Icons.location_on_outlined,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your address';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        // NBI Clearance Upload Button
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'NBI Clearance Upload',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _nbiClearanceBase64 != null
-                                  ? Container(
-                                    width: 200,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.grey[400]!,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: ImageService.base64ToImage(
-                                        _nbiClearanceBase64,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  )
-                                  : Icon(
-                                    Icons.description,
-                                    size: 60,
-                                    color: Colors.grey[400],
-                                  ),
-                              const SizedBox(height: 12),
-                              ElevatedButton.icon(
-                                onPressed: _pickNBIClearance,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Colors.white,
-                                ),
-                                icon: const Icon(Icons.upload_file),
-                                label: Text(
-                                  _nbiClearanceBase64 != null
-                                      ? 'Change NBI Clearance'
-                                      : 'Upload NBI Clearance',
-                                ),
-                              ),
-                              if (_nbiClearanceBase64 == null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    'NBI Clearance is required for verification',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
                         ),
                         const SizedBox(height: 20),
                       ],
+                      // NBI Clearance Upload Button - show for both user types
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'NBI Clearance Upload',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _nbiClearanceBase64 != null
+                                ? Container(
+                                  width: 200,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Colors.grey[400]!,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: ImageService.base64ToImage(
+                                      _nbiClearanceBase64,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                )
+                                : Icon(
+                                  Icons.description,
+                                  size: 60,
+                                  color: Colors.grey[400],
+                                ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _pickNBIClearance,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: const Icon(Icons.upload_file),
+                              label: Text(
+                                _nbiClearanceBase64 != null
+                                    ? 'Change NBI Clearance'
+                                    : 'Upload NBI Clearance',
+                              ),
+                            ),
+                            if (_nbiClearanceBase64 == null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  'NBI Clearance is required for verification',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       // Password Field
                       _buildTextField(
                         controller: _passwordController,
@@ -502,9 +482,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _isLoading || !_acceptTerms
                                   ? null
                                   : () {
-                                    // For Helper, require NBI Clearance
-                                    if (widget.userType == UserType.helper &&
-                                        _nbiClearanceBase64 == null) {
+                                    // For both Helper and Employer, require NBI Clearance
+                                    if (_nbiClearanceBase64 == null) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(

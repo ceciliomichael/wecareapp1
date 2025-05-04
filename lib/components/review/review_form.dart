@@ -119,45 +119,45 @@ class _ReviewFormState extends State<ReviewForm> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+      setState(() {
+        _isSubmitting = true;
+      });
 
-    try {
-      await ReviewService.createReview(
+      try {
+        await ReviewService.createReview(
         reviewerId: _currentUserId!,
-        targetId: widget.targetId,
+          targetId: widget.targetId,
         rating: _overallRating,
         comment: _commentController.text.trim(),
         categoryRatings: _categoryRatings,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
             content: Text('Review submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+              backgroundColor: Colors.green,
+            ),
+          );
         widget.onComplete(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
             content: Text('Error submitting review: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+              backgroundColor: Colors.red,
+            ),
+          );
         widget.onComplete(false);
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
   }
 
   void _showErrorDialog(String message) {
@@ -173,15 +173,15 @@ class _ReviewFormState extends State<ReviewForm> {
                 child: const Text('OK'),
               ),
             ],
-          ),
-    );
+        ),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 8),
@@ -196,11 +196,11 @@ class _ReviewFormState extends State<ReviewForm> {
           // Overall rating display
           Center(
             child: Column(
-              children: [
-                const Text(
+            children: [
+              const Text(
                   'Overall Rating',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+              ),
                 const SizedBox(height: 8),
                 Text(
                   _overallRating.toStringAsFixed(1),
@@ -210,8 +210,8 @@ class _ReviewFormState extends State<ReviewForm> {
                     color: Colors.amber,
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
                     if (index < _overallRating.floor()) {
                       return const Icon(
@@ -234,37 +234,37 @@ class _ReviewFormState extends State<ReviewForm> {
                       );
                     }
                   }),
-                ),
-              ],
-            ),
+                    ),
+                ],
+              ),
           ),
 
-          const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
           // Comment field
           TextField(
-            controller: _commentController,
+                controller: _commentController,
             maxLines: 4,
-            decoration: const InputDecoration(
+                decoration: const InputDecoration(
               labelText: 'Write your review',
               hintText:
                   'What did you like or dislike? What should others know?',
-              border: OutlineInputBorder(),
-            ),
-          ),
+                  border: OutlineInputBorder(),
+                ),
+              ),
 
           const SizedBox(height: 24),
 
           // Submit button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitReview,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child:
-                  _isSubmitting
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitReview,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child:
+                      _isSubmitting
                       ? const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -297,7 +297,7 @@ class _ReviewFormState extends State<ReviewForm> {
           Text(
             category,
             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-          ),
+                            ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
