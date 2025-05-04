@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../models/job.dart';
+import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
+import '../../components/job_section_header.dart';
+import '../../components/saved_job_card.dart';
 
 class JobBrowseScreen extends StatefulWidget {
   final User helper;
@@ -12,16 +15,20 @@ class JobBrowseScreen extends StatefulWidget {
   State<JobBrowseScreen> createState() => _JobBrowseScreenState();
 }
 
-class _JobBrowseScreenState extends State<JobBrowseScreen> {
-  List<Job> _jobs = [];
-  List<Job> _filteredJobs = [];
-  bool _isLoading = true;
+class _JobBrowseScreenState extends State<JobBrowseScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  List<Job> _bestMatchJobs = [];
+  List<Job> _recentJobs = [];
+  List<Job> _savedJobs = [];
   String _searchQuery = '';
+  bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadJobs();
     _searchController.addListener(_onSearchChanged);
   }
@@ -30,37 +37,14 @@ class _JobBrowseScreenState extends State<JobBrowseScreen> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text;
-      _filterJobs();
     });
-  }
-
-  void _filterJobs() {
-    if (_searchQuery.isEmpty) {
-      _filteredJobs = List.from(_jobs);
-    } else {
-      _filteredJobs =
-          _jobs.where((job) {
-            return job.title.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                job.description.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                job.location.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                job.requiredSkills.any(
-                  (skill) =>
-                      skill.toLowerCase().contains(_searchQuery.toLowerCase()),
-                );
-          }).toList();
-    }
   }
 
   Future<void> _loadJobs() async {
@@ -69,10 +53,21 @@ class _JobBrowseScreenState extends State<JobBrowseScreen> {
     });
 
     try {
-      final jobs = await JobService.getActiveJobs();
+      // Load best matches
+      final bestMatches = await JobService.findBestMatchesForHelper(
+        widget.helper,
+      );
+
+      // Load recent jobs
+      final recentJobs = await JobService.getRecentJobs();
+
+      // Load saved jobs
+      final savedJobs = await JobService.getSavedJobsForUser(widget.helper.id);
+
       setState(() {
-        _jobs = jobs;
-        _filteredJobs = List.from(jobs);
+        _bestMatchJobs = bestMatches;
+        _recentJobs = recentJobs;
+        _savedJobs = savedJobs;
         _isLoading = false;
       });
     } catch (e) {
@@ -87,99 +82,300 @@ class _JobBrowseScreenState extends State<JobBrowseScreen> {
     }
   }
 
+  Future<void> _saveJob(Job job) async {
+    try {
+      await JobService.saveJobForUser(job.id, widget.helper.id);
+      _loadJobs(); // Refresh job lists
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving job: $e')));
+      }
+    }
+  }
+
+  Future<void> _unsaveJob(Job job) async {
+    try {
+      await JobService.unsaveJobForUser(job.id, widget.helper.id);
+      _loadJobs(); // Refresh job lists
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error removing saved job: $e')));
+      }
+    }
+  }
+
+  void _viewJobDetails(Job job) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => _buildJobDetailScreen(job)),
+    ).then((_) {
+      // Refresh jobs when returning from details
+      _loadJobs();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
+          // Search bar
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Find a Job',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search jobs',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by job title, skill, or location',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${_filteredJobs.length} Jobs Available',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: _loadJobs,
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Refresh'),
-                    ),
-                  ],
-                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+                suffixIcon:
+                    _searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        )
+                        : null,
+              ),
+            ),
+          ),
+
+          // Tab bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              tabs: const [
+                Tab(text: 'Best Matches'),
+                Tab(text: 'Recent'),
+                Tab(text: 'Saved'),
               ],
             ),
           ),
+
+          // Tab views
           Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _filteredJobs.isEmpty
-                    ? const Center(
-                      child: Text(
-                        'No jobs found.\nTry different search terms or check back later.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    )
-                    : RefreshIndicator(
-                      onRefresh: _loadJobs,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _filteredJobs.length,
-                        itemBuilder: (context, index) {
-                          return _buildJobCard(_filteredJobs[index]);
-                        },
-                      ),
-                    ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Best Matches tab
+                _buildBestMatchesTab(),
+
+                // Recent Jobs tab
+                _buildRecentJobsTab(),
+
+                // Saved Jobs tab
+                _buildSavedJobsTab(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildJobCard(Job job) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => JobDetailScreen(job: job, helper: widget.helper),
+  Widget _buildBestMatchesTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final filteredJobs =
+        _searchQuery.isEmpty
+            ? _bestMatchJobs
+            : _bestMatchJobs
+                .where(
+                  (job) =>
+                      job.title.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.description.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.requiredSkills.any(
+                        (skill) => skill.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      ),
+                )
+                .toList();
+
+    if (filteredJobs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'No matching jobs found for your skills.\nUpdate your profile with relevant skills.'
+                  : 'No jobs match your search criteria.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
             ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadJobs,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredJobs.length,
+        itemBuilder: (context, index) {
+          final job = filteredJobs[index];
+          return _buildJobListItem(job);
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecentJobsTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final filteredJobs =
+        _searchQuery.isEmpty
+            ? _recentJobs
+            : _recentJobs
+                .where(
+                  (job) =>
+                      job.title.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.description.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.requiredSkills.any(
+                        (skill) => skill.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      ),
+                )
+                .toList();
+
+    if (filteredJobs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.watch_later_outlined,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'No recent jobs available at the moment.'
+                  : 'No recent jobs match your search criteria.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadJobs,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredJobs.length,
+        itemBuilder: (context, index) {
+          final job = filteredJobs[index];
+          return _buildJobListItem(job);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSavedJobsTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final filteredJobs =
+        _searchQuery.isEmpty
+            ? _savedJobs
+            : _savedJobs
+                .where(
+                  (job) =>
+                      job.title.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.description.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ||
+                      job.requiredSkills.any(
+                        (skill) => skill.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      ),
+                )
+                .toList();
+
+    if (filteredJobs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'No saved jobs yet.\nSave jobs to find them easily later.'
+                  : 'No saved jobs match your search criteria.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadJobs,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredJobs.length,
+        itemBuilder: (context, index) {
+          final job = filteredJobs[index];
+          return SavedJobCard(
+            job: job,
+            onTap: () => _viewJobDetails(job),
+            onUnsave: () => _unsaveJob(job),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildJobListItem(Job job) {
+    final isSaved = job.isSavedByUser(widget.helper.id);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _viewJobDetails(job),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -190,108 +386,91 @@ class _JobBrowseScreenState extends State<JobBrowseScreen> {
                     child: Text(
                       job.title,
                       style: const TextStyle(
-                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                  IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: isSaved ? Colors.amber : Colors.grey,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '₱${job.salary.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
+                    onPressed: () {
+                      if (isSaved) {
+                        _unsaveJob(job);
+                      } else {
+                        _saveJob(job);
+                      }
+                    },
+                    tooltip: isSaved ? 'Remove from saved' : 'Save job',
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
+              Text(
+                job.location,
+                style: TextStyle(color: Colors.grey[700], fontSize: 14),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                  Icon(Icons.attach_money, size: 16, color: Colors.green[700]),
                   const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      job.location,
-                      style: const TextStyle(color: Colors.grey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    '₱${job.salary.toStringAsFixed(2)} ${job.salaryType.label}',
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                job.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    job.requiredSkills.take(3).map((skill) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          skill,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      );
-                    }).toList(),
               ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Posted on ${_formatDate(job.datePosted)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => ApplyJobScreen(
-                                job: job,
-                                helper: widget.helper,
+                  // Skills preview
+                  Expanded(
+                    child:
+                        job.requiredSkills.isNotEmpty
+                            ? Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children:
+                                  job.requiredSkills.take(2).map((skill) {
+                                    return Chip(
+                                      label: Text(
+                                        skill,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.1),
+                                      padding: EdgeInsets.zero,
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: VisualDensity.compact,
+                                    );
+                                  }).toList(),
+                            )
+                            : const Text(
+                              'No specific skills required',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                fontSize: 12,
+                                color: Colors.grey,
                               ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Apply'),
+                            ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ],
               ),
@@ -302,8 +481,10 @@ class _JobBrowseScreenState extends State<JobBrowseScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Widget _buildJobDetailScreen(Job job) {
+    // We'll use the existing JobDetailScreen from helper_dashboard.dart
+    // This is a reference to avoid duplicating code
+    return JobDetailScreen(job: job, helper: widget.helper);
   }
 }
 

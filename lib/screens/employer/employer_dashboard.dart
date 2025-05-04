@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../models/job.dart';
+import '../../models/salary_type.dart';
 import '../../services/auth_service.dart';
 import '../../services/job_service.dart';
 import '../auth/auth_screen.dart';
@@ -9,6 +10,7 @@ import 'job_posting_screen.dart';
 import 'my_jobs_screen.dart';
 import 'applications_screen.dart';
 import 'employer_profile_screen.dart';
+import 'helper_services_screen.dart';
 
 class EmployerDashboard extends StatefulWidget {
   final User employer;
@@ -23,6 +25,7 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
   List<Job> _recentJobs = [];
+  List<Job> _helperPostedJobs = [];
   bool _isLoading = true;
 
   @override
@@ -43,10 +46,12 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
     });
 
     try {
-      final jobs = await JobService.getJobsByEmployer(widget.employer.id);
+      final jobs = await JobService.getJobsByPoster(widget.employer.id);
+      final helperJobs = await JobService.getHelperPostedJobs();
 
       setState(() {
         _recentJobs = jobs;
+        _helperPostedJobs = helperJobs;
         _isLoading = false;
       });
     } catch (e) {
@@ -70,70 +75,109 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
       EmployerProfileScreen(employer: widget.employer),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('WeCare Employer'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleLogout,
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        children: _pages,
-      ),
-      floatingActionButton:
-          _currentIndex == 0 || _currentIndex == 1
-              ? FloatingActionButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => JobPostingScreen(
-                            employer: widget.employer,
-                            onJobPosted: _loadData,
-                          ),
+    return WillPopScope(
+      onWillPop: () async {
+        // If on home tab, show exit confirmation
+        if (_currentIndex == 0) {
+          return await showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Exit App?'),
+                      content: const Text(
+                        'Are you sure you want to exit the app?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('No'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Yes'),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: const Icon(Icons.add),
-                tooltip: 'Post a New Job',
-              )
-              : null,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
+              ) ??
+              false;
+        } else {
+          // If on other tabs, navigate to home tab
           setState(() {
-            _currentIndex = index;
+            _currentIndex = 0;
             _pageController.animateToPage(
-              index,
+              0,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
             );
           });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'My Jobs'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Applications',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+          return false;
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('WeCare Employer'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _handleLogout,
+              tooltip: 'Logout',
+            ),
+          ],
+        ),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          children: _pages,
+        ),
+        floatingActionButton:
+            _currentIndex == 0 || _currentIndex == 1
+                ? FloatingActionButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => JobPostingScreen(
+                              employer: widget.employer,
+                              onJobPosted: _loadData,
+                            ),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add),
+                  tooltip: 'Post a New Job',
+                )
+                : null,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.work), label: 'My Jobs'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: 'Applications',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
       ),
     );
   }
@@ -288,6 +332,45 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
               ),
             ],
             const SizedBox(height: 16),
+
+            // Helper Services section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Services Offered by Helpers',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (_helperPostedJobs.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      // Navigate to the helper services screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => HelperServicesScreen(
+                                employer: widget.employer,
+                              ),
+                        ),
+                      );
+                    },
+                    child: const Text('View All'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _helperPostedJobs.isEmpty
+                ? _buildEmptyHelperServices()
+                : Column(
+                  children:
+                      _helperPostedJobs
+                          .take(3)
+                          .map((job) => _buildHelperServiceCard(job))
+                          .toList(),
+                ),
 
             // Tips section
             Card(
@@ -491,6 +574,120 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyHelperServices() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.handyman_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          const Text(
+            'No helper services available',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Helpers haven\'t posted any services yet',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelperServiceCard(Job job) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Icon(Icons.handyman, color: Colors.blue, size: 24),
+        ),
+        title: Text(
+          job.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    job.location,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.attach_money, size: 14, color: Colors.green[700]),
+                const SizedBox(width: 4),
+                Text(
+                  '${job.salary.toStringAsFixed(2)} ${job.salaryType.label}',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Active',
+                style: TextStyle(
+                  color: Colors.green.shade700,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          // Navigate to the helper services screen with this job pre-selected
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => HelperServicesScreen(employer: widget.employer),
+            ),
+          );
+        },
       ),
     );
   }

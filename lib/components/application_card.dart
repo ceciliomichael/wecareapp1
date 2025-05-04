@@ -274,7 +274,7 @@ class ApplicationCard extends StatelessWidget {
     try {
       // Create or get existing conversation
       final conversation = await messageService.getOrCreateConversation(
-        job.employerId,
+        job.posterId,
         helper.id,
         job.id,
       );

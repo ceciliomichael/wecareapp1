@@ -31,21 +31,41 @@ class ConversationTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor:
-                  conversation.unreadCount > 0 ? Colors.teal : Colors.teal[200],
-              radius: 24,
-              child: Text(
-                otherUser.name.isNotEmpty
-                    ? otherUser.name[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+            // Avatar with active status indicator
+            Stack(
+              children: [
+                CircleAvatar(
+                  backgroundColor:
+                      conversation.unreadCount > 0
+                          ? Colors.teal
+                          : Colors.teal[200],
+                  radius: 24,
+                  child: Text(
+                    otherUser.name.isNotEmpty
+                        ? otherUser.name[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
-              ),
+                if (otherUser.isActive)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             SizedBox(width: 16),
 
@@ -57,15 +77,39 @@ class ConversationTile extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        otherUser.name,
-                        style: TextStyle(
-                          fontWeight:
-                              conversation.unreadCount > 0
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            otherUser.name,
+                            style: TextStyle(
+                              fontWeight:
+                                  conversation.unreadCount > 0
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          if (otherUser.isActive)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Active',
+                                style: TextStyle(
+                                  color: Colors.green[800],
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       Text(
                         _formatTime(conversation.lastMessageTime),

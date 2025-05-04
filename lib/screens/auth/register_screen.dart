@@ -22,6 +22,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _companyNameController = TextEditingController();
+  final _addressController = TextEditingController();
 
   String? _selectedSkill;
   String? _selectedExperience;
@@ -40,6 +42,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _companyNameController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -86,10 +90,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           userType: widget.userType,
           photoUrl: _profileImageBase64,
           nbiClearance:
-              widget.userType == UserType.helper ? _nbiClearanceBase64 : null,
+              widget.userType == UserType.employer ? _nbiClearanceBase64 : null,
           skills: skills,
           experience:
               widget.userType == UserType.helper ? _selectedExperience : null,
+          companyName:
+              widget.userType == UserType.employer
+                  ? _companyNameController.text
+                  : null,
+          address:
+              widget.userType == UserType.employer
+                  ? _addressController.text
+                  : null,
         );
 
         if (mounted) {
@@ -99,11 +111,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
 
           // Navigate to login
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => LoginScreen(userType: widget.userType),
             ),
+            (route) => false, // Remove all previous routes
           );
         }
       } catch (e) {
@@ -298,6 +311,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             setState(() {
                               _selectedExperience = value;
                             });
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      // Employer-specific fields
+                      if (widget.userType == UserType.employer) ...[
+                        _buildTextField(
+                          controller: _companyNameController,
+                          labelText: 'Company Name',
+                          hintText: 'Enter your company name (optional)',
+                          prefixIcon: Icons.business_outlined,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildTextField(
+                          controller: _addressController,
+                          labelText: 'Address',
+                          hintText: 'Enter your address',
+                          prefixIcon: Icons.location_on_outlined,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your address';
+                            }
+                            return null;
                           },
                         ),
                         const SizedBox(height: 20),

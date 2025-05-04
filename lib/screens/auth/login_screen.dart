@@ -22,6 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  User? _loggedInUser;
+  bool _showAccountStatus = false;
 
   @override
   void dispose() {
@@ -75,6 +77,71 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
+
+                // Account Status Alert
+                if (_showAccountStatus)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.amber[800],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Account Inactive',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your account is currently set to inactive. Please contact support to reactivate your account.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.amber[900],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              // Contact support functionality
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Support contact functionality will be implemented soon',
+                                  ),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.amber[800],
+                            ),
+                            child: const Text('Contact Support'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // Login Form
                 Form(
                   key: _formKey,
@@ -289,57 +356,77 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
       try {
+        setState(() {
+          _isLoading = true;
+          _showAccountStatus = false;
+        });
+
+        // Attempt login
         final user = await AuthService.login(
-          _emailController.text,
-          _passwordController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+          userType: widget.userType,
         );
 
-        if (mounted) {
-          // Check if the user type matches the selected login type
-          if (user.userType != widget.userType) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'This account is registered as a ${user.userType == UserType.employer ? 'employer' : 'helper'}. Please login with the correct user type.',
-                ),
-              ),
-            );
+        // Check if user exists and matches the selected type
+        if (user != null) {
+          setState(() {
+            _loggedInUser = user;
+          });
+
+          // Check if account is active
+          if (!user.isActive) {
             setState(() {
+              _showAccountStatus = true;
               _isLoading = false;
             });
             return;
           }
 
-          // Navigate based on user type
+          // Update last active timestamp
+          await AuthService.updateLastActive(user.id);
+
+          // Navigate to the appropriate dashboard
           if (user.userType == UserType.employer) {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (context) => EmployerDashboard(employer: user),
+                builder:
+                    (context) => EmployerDashboard(employer: _loggedInUser!),
               ),
-              (route) => false,
+              (route) => false, // Remove all previous routes
             );
           } else {
-            // Navigate to helper dashboard
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (context) => HelperDashboard(helper: user),
+                builder: (context) => HelperDashboard(helper: _loggedInUser!),
               ),
-              (route) => false,
+              (route) => false, // Remove all previous routes
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid credentials or user type mismatch'),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted && !_showAccountStatus) {
           setState(() {
             _isLoading = false;
           });

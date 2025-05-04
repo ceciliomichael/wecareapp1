@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models/user.dart';
+import '../../models/job.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
+import '../../services/job_service.dart';
+import '../../components/activity_status_indicator.dart';
+import '../../components/helper_service_card.dart';
+import '../../components/review/detailed_rating_breakdown.dart';
+import '../../components/review/review_card.dart';
+import '../../components/review/review_form.dart';
+import '../../models/review.dart';
+import '../../services/review_service.dart';
 
 class HelperProfileScreen extends StatefulWidget {
   final User helper;
+  final bool isCurrentUser;
 
-  const HelperProfileScreen({Key? key, required this.helper}) : super(key: key);
+  const HelperProfileScreen({
+    Key? key,
+    required this.helper,
+    this.isCurrentUser = false,
+  }) : super(key: key);
 
   @override
   State<HelperProfileScreen> createState() => _HelperProfileScreenState();
@@ -24,6 +38,16 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
   bool _isSaving = false;
   String? _photoUrl;
   String? _nbiClearance;
+  late bool _isActive;
+  List<Job> _postedServices = [];
+  bool _loadingServices = true;
+  List<Review> _reviews = [];
+  bool _loadingReviews = true;
+  bool _showReviewForm = false;
+  double _averageRating = 0;
+  Map<String, double> _categoryAverages = {};
+  // Current user ID for reviews
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -37,6 +61,75 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
     _skills = List<String>.from(widget.helper.skills ?? []);
     _photoUrl = widget.helper.photoUrl;
     _nbiClearance = widget.helper.nbiClearance;
+    _isActive = widget.helper.isActive;
+    _loadPostedServices();
+    _loadReviews();
+    _loadCurrentUserId(); // Add this method
+  }
+
+  // Load current user ID
+  Future<void> _loadCurrentUserId() async {
+    final userId = await AuthService.getCurrentUserId();
+    if (mounted) {
+      setState(() {
+        _currentUserId = userId;
+      });
+    }
+  }
+
+  Future<void> _loadPostedServices() async {
+    setState(() {
+      _loadingServices = true;
+    });
+
+    try {
+      final services = await JobService.getHelperPostedJobs(widget.helper.id);
+      if (mounted) {
+        setState(() {
+          _postedServices = services;
+          _loadingServices = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingServices = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading services: $e')));
+      }
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    setState(() {
+      _loadingReviews = true;
+    });
+
+    try {
+      final reviews = await ReviewService.getReviewsForUser(widget.helper.id);
+      final avgRating = await ReviewService.getAverageRating(widget.helper.id);
+      final categoryAvgs = await ReviewService.getCategoryAverages(
+        widget.helper.id,
+      );
+
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _averageRating = avgRating;
+          _categoryAverages = categoryAvgs;
+          _loadingReviews = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading reviews: $e');
+      if (mounted) {
+        setState(() {
+          _loadingReviews = false;
+        });
+      }
+    }
   }
 
   @override
@@ -65,6 +158,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
         skills: _skills,
         experience: _experienceController.text,
         password: widget.helper.password,
+        isActive: _isActive,
       );
 
       await AuthService.updateProfile(updatedHelper);
@@ -86,6 +180,46 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
         setState(() {
           _isSaving = false;
         });
+      }
+    }
+  }
+
+  Future<void> _toggleActiveStatus() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final updatedUser = await AuthService.updateActiveStatus(
+        widget.helper.id,
+        !_isActive,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isActive = updatedUser.isActive;
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isActive
+                  ? 'Your profile is now visible to employers'
+                  : 'Your profile is now hidden from employers',
+            ),
+            backgroundColor: _isActive ? Colors.green : Colors.grey,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating status: $e')));
       }
     }
   }
@@ -131,6 +265,59 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
     }
   }
 
+  void _viewServiceDetails(Job service) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    HelperServiceCard(
+                      service: service,
+                      helper: widget.helper,
+                      onTap: () {},
+                      isDetailed: true,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _toggleReviewForm() {
+    setState(() {
+      _showReviewForm = !_showReviewForm;
+    });
+  }
+
+  void _handleReviewComplete(bool success) {
+    if (success) {
+      // Reload reviews
+      _loadReviews();
+    }
+    setState(() {
+      _showReviewForm = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,12 +329,33 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'My Profile',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'My Profile',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        // Active status toggle
+                        Row(
+                          children: [
+                            Text(
+                              _isActive ? 'Active' : 'Inactive',
+                              style: TextStyle(
+                                color: _isActive ? Colors.green : Colors.grey,
+                              ),
+                            ),
+                            Switch(
+                              value: _isActive,
+                              onChanged: (value) => _toggleActiveStatus(),
+                              activeColor: Colors.green,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                     Center(
@@ -174,6 +382,15 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                             color: Colors.grey,
                                           )
                                           : null,
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: ActivityStatusIndicator(
+                                    isActive: _isActive,
+                                    size: 16,
+                                    showText: false,
+                                  ),
                                 ),
                                 if (_isEditing)
                                   Positioned(
@@ -207,17 +424,117 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'Helper',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Helper',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              ActivityStatusIndicator(
+                                isActive: _isActive,
+                                showText: true,
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // My Services Section
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'My Services',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    // Navigate to post service screen
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add New'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            if (_loadingServices)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            else if (_postedServices.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.work_outline,
+                                        size: 64,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'You haven\'t posted any services yet',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          // Navigate to post service screen
+                                        },
+                                        icon: const Icon(Icons.add),
+                                        label: const Text('Post a Service'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _postedServices.length,
+                                itemBuilder: (context, index) {
+                                  final service = _postedServices[index];
+                                  return HelperServiceCard(
+                                    service: service,
+                                    helper: widget.helper,
+                                    onTap: () => _viewServiceDetails(service),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Personal Information Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -277,6 +594,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // Skills Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -359,6 +677,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // Experience Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -394,6 +713,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // NBI Clearance Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -503,6 +823,137 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                           ),
                         ],
                       ),
+                    const SizedBox(height: 32),
+                    // Reviews Section
+                    const SizedBox(height: 16),
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Reviews & Ratings',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (!_showReviewForm && !widget.isCurrentUser)
+                                  TextButton.icon(
+                                    onPressed: _toggleReviewForm,
+                                    icon: const Icon(Icons.rate_review),
+                                    label: const Text('Write a Review'),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            if (_loadingReviews)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            else if (_reviews.isEmpty && !_showReviewForm)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.star_border,
+                                        size: 64,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No reviews yet',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      if (!widget.isCurrentUser) ...[
+                                        const SizedBox(height: 16),
+                                        ElevatedButton.icon(
+                                          onPressed: _toggleReviewForm,
+                                          icon: const Icon(Icons.rate_review),
+                                          label: const Text(
+                                            'Be the first to review',
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else if (_reviews.isNotEmpty) ...[
+                              DetailedRatingBreakdown(
+                                overallRating: _averageRating,
+                                categoryRatings: _categoryAverages,
+                                reviewCount: _reviews.length,
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                'Recent Reviews',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount:
+                                    _reviews.length > 3 ? 3 : _reviews.length,
+                                itemBuilder: (context, index) {
+                                  return ReviewCard(
+                                    review: _reviews[index],
+                                    showCategoryRatings: true,
+                                  );
+                                },
+                              ),
+                              if (_reviews.length > 3)
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: () {
+                                      // TODO: Navigate to full reviews page
+                                    },
+                                    icon: const Icon(Icons.arrow_forward),
+                                    label: const Text('See all reviews'),
+                                  ),
+                                ),
+                            ],
+                            if (_showReviewForm) ...[
+                              const Divider(height: 32),
+                              const Text(
+                                'Write a Review',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ReviewForm(
+                                reviewerId: _currentUserId ?? 'anonymous',
+                                targetId: widget.helper.id,
+                                onComplete: _handleReviewComplete,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 32),
                   ],
                 ),

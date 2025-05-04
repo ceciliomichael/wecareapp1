@@ -39,7 +39,34 @@ class WeCareApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      // Set this to false to prevent accidental app exits with back button
+      home: WillPopScope(
+        onWillPop: () async {
+          // Show an exit confirmation dialog when back button is pressed at the root
+          return await showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Exit App?'),
+                      content: const Text(
+                        'Are you sure you want to exit the app?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('No'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Yes'),
+                        ),
+                      ],
+                    ),
+              ) ??
+              false;
+        },
+        child: const SplashScreen(),
+      ),
     );
   }
 }

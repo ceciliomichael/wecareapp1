@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/conversation.dart';
 import '../../models/user.dart';
@@ -6,6 +7,7 @@ import '../../models/job.dart';
 import '../../services/message_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/job_service.dart';
+import '../../services/auth_service.dart';
 import '../../components/chat/conversation_tile.dart';
 import 'chat_screen.dart';
 
@@ -23,16 +25,29 @@ class ConversationsListScreen extends StatefulWidget {
 class _ConversationsListScreenState extends State<ConversationsListScreen> {
   final MessageService _messageService = MessageService();
   final _jobService = JobService();
-
+  final _authService = AuthService();
+  
   List<Conversation> _conversations = [];
   Map<String, Job> _jobCache = {};
   Map<String, User> _userCache = {};
   bool _isLoading = true;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadConversations();
+    
+    // Set up timer to refresh user status every 30 seconds
+    _refreshTimer = Timer.periodic(Duration(seconds: 30), (_) {
+      _refreshUserStatuses();
+    });
+  }
+  
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadConversations() async {
@@ -67,6 +82,29 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+  
+  Future<void> _refreshUserStatuses() async {
+    try {
+      final updatedUserCache = <String, User>{};
+      final users = await StorageService.getUsers();
+      
+      for (final userId in _userCache.keys) {
+        final updatedUser = users.firstWhere(
+          (u) => u.id == userId,
+          orElse: () => _userCache[userId]!,
+        );
+        updatedUserCache[userId] = updatedUser;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _userCache = updatedUserCache;
+        });
+      }
+    } catch (e) {
+      print('Error refreshing user statuses: $e');
     }
   }
 
@@ -136,14 +174,29 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Messages'), backgroundColor: Colors.teal),
+      appBar: AppBar(
+        title: Text('Messages'), 
+        backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              _loadConversations();
+              _refreshUserStatuses();
+            },
+          ),
+        ],
+      ),
       body:
           _isLoading
               ? Center(child: CircularProgressIndicator())
               : _conversations.isEmpty
               ? _buildEmptyState()
               : RefreshIndicator(
-                onRefresh: _loadConversations,
+                onRefresh: () async {
+                  await _loadConversations();
+                  await _refreshUserStatuses();
+                },
                 child: ListView.builder(
                   itemCount: _conversations.length,
                   itemBuilder: (context, index) {
@@ -222,6 +275,7 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
     ).then((_) {
       // Refresh the list when returning from chat screen
       _loadConversations();
+      _refreshUserStatuses();
     });
   }
 }

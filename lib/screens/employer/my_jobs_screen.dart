@@ -30,7 +30,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
     });
 
     try {
-      final jobs = await JobService.getJobsByEmployer(widget.employer.id);
+      final jobs = await JobService.getJobsByPoster(widget.employer.id);
       setState(() {
         _jobs = jobs;
         _isLoading = false;

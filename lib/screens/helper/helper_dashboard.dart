@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../models/job.dart';
+import '../../models/salary_type.dart';
 import '../../services/auth_service.dart';
 import '../../services/job_service.dart';
 import '../auth/auth_screen.dart';
@@ -8,6 +9,7 @@ import '../chat/conversations_list_screen.dart';
 import 'job_browse_screen.dart';
 import 'my_applications_screen.dart';
 import 'helper_profile_screen.dart';
+import 'post_service_screen.dart';
 
 class HelperDashboard extends StatefulWidget {
   final User helper;
@@ -22,6 +24,7 @@ class _HelperDashboardState extends State<HelperDashboard> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
   List<Job> _recentJobs = [];
+  List<Job> _myPostedServices = [];
   bool _isLoading = true;
 
   @override
@@ -43,10 +46,15 @@ class _HelperDashboardState extends State<HelperDashboard> {
 
     try {
       final jobs = await JobService.getActiveJobs();
+      final myPostedServices = await JobService.getJobsByPoster(
+        widget.helper.id,
+      );
 
       setState(() {
         _recentJobs =
             jobs.take(5).toList(); // Get only 5 recent jobs for dashboard
+        _myPostedServices =
+            myPostedServices.where((job) => job.postedByHelper).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -238,6 +246,23 @@ class _HelperDashboardState extends State<HelperDashboard> {
                           label: 'Messages',
                           color: Colors.green[600]!,
                         ),
+                        _buildActionButton(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => PostServiceScreen(
+                                      helper: widget.helper,
+                                      onServicePosted: _loadData,
+                                    ),
+                              ),
+                            );
+                          },
+                          icon: Icons.post_add,
+                          label: 'Post Service',
+                          color: Colors.purple[500]!,
+                        ),
                       ],
                     ),
                   ],
@@ -263,6 +288,68 @@ class _HelperDashboardState extends State<HelperDashboard> {
                   ),
                 )
                 : _buildRecentJobsList(),
+
+            const SizedBox(height: 24),
+
+            // My Posted Services section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'My Posted Services',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (_myPostedServices.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => PostServiceScreen(
+                                helper: widget.helper,
+                                onServicePosted: _loadData,
+                              ),
+                        ),
+                      );
+                    },
+                    child: const Text('Post New'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _myPostedServices.isEmpty
+                ? Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'You haven\'t posted any services yet.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => PostServiceScreen(
+                                    helper: widget.helper,
+                                    onServicePosted: _loadData,
+                                  ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Post Your First Service'),
+                      ),
+                    ],
+                  ),
+                )
+                : _buildMyServicesGrid(),
           ],
         ),
       ),
@@ -349,6 +436,192 @@ class _HelperDashboardState extends State<HelperDashboard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMyServicesGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: _myPostedServices.length,
+      itemBuilder: (context, index) {
+        final service = _myPostedServices[index];
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => PostServiceScreen(
+                        helper: widget.helper,
+                        existingService: service,
+                        onServicePosted: _loadData,
+                      ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title with edit button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          service.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => PostServiceScreen(
+                                    helper: widget.helper,
+                                    existingService: service,
+                                    onServicePosted: _loadData,
+                                  ),
+                            ),
+                          );
+                        },
+                        child: const Icon(
+                          Icons.edit,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Rate information
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.attach_money,
+                        size: 14,
+                        color: Colors.green[700],
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '₱${service.salary.toStringAsFixed(2)} ${service.salaryType.label}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Location
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          service.location,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Active status indicator
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          service.isActive
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      service.isActive ? 'Active' : 'Inactive',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: service.isActive ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Skills
+                  Expanded(
+                    child:
+                        service.requiredSkills.isNotEmpty
+                            ? Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children:
+                                  service.requiredSkills.take(3).map((skill) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        skill,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                    );
+                                  }).toList(),
+                            )
+                            : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

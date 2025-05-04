@@ -4,9 +4,11 @@ class Review {
   final String id;
   final String reviewerId; // ID of the user giving the review
   final String targetId; // ID of the user being reviewed
-  final double rating; // Rating from 1 to 5
+  final double rating; // Overall rating from 1 to 5
   final String comment;
   final DateTime createdAt;
+  final Map<String, double>?
+  categoryRatings; // Optional category-specific ratings
 
   Review({
     required this.id,
@@ -15,6 +17,7 @@ class Review {
     required this.rating,
     required this.comment,
     required this.createdAt,
+    this.categoryRatings,
   });
 
   // Create a copy of the review with some fields updated
@@ -25,6 +28,7 @@ class Review {
     double? rating,
     String? comment,
     DateTime? createdAt,
+    Map<String, double>? categoryRatings,
   }) {
     return Review(
       id: id ?? this.id,
@@ -33,6 +37,7 @@ class Review {
       rating: rating ?? this.rating,
       comment: comment ?? this.comment,
       createdAt: createdAt ?? this.createdAt,
+      categoryRatings: categoryRatings ?? this.categoryRatings,
     );
   }
 
@@ -45,18 +50,30 @@ class Review {
       'rating': rating,
       'comment': comment,
       'createdAt': createdAt.toIso8601String(),
+      'categoryRatings': categoryRatings,
     };
   }
 
   // Create Review from Map
   factory Review.fromMap(Map<String, dynamic> map) {
+    Map<String, double>? categoryRatings;
+
+    if (map['categoryRatings'] != null) {
+      categoryRatings = Map<String, double>.from(
+        (map['categoryRatings'] as Map).map(
+          (key, value) => MapEntry(key as String, (value as num).toDouble()),
+        ),
+      );
+    }
+
     return Review(
       id: map['id'],
       reviewerId: map['reviewerId'],
       targetId: map['targetId'],
-      rating: map['rating'],
+      rating: (map['rating'] as num).toDouble(),
       comment: map['comment'],
       createdAt: DateTime.parse(map['createdAt']),
+      categoryRatings: categoryRatings,
     );
   }
 
@@ -68,6 +85,6 @@ class Review {
 
   @override
   String toString() {
-    return 'Review(id: $id, reviewerId: $reviewerId, targetId: $targetId, rating: $rating, comment: $comment, createdAt: $createdAt)';
+    return 'Review(id: $id, reviewerId: $reviewerId, targetId: $targetId, rating: $rating, comment: $comment, createdAt: $createdAt, categoryRatings: $categoryRatings)';
   }
 }

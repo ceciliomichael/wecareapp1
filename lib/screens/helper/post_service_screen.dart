@@ -4,23 +4,23 @@ import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
 
-class JobPostingScreen extends StatefulWidget {
-  final User employer;
-  final Function onJobPosted;
-  final Job? job; // Null for new job, non-null for editing
+class PostServiceScreen extends StatefulWidget {
+  final User helper;
+  final Function onServicePosted;
+  final Job? existingService; // Null for new service, non-null for editing
 
-  const JobPostingScreen({
+  const PostServiceScreen({
     Key? key,
-    required this.employer,
-    required this.onJobPosted,
-    this.job,
+    required this.helper,
+    required this.onServicePosted,
+    this.existingService,
   }) : super(key: key);
 
   @override
-  State<JobPostingScreen> createState() => _JobPostingScreenState();
+  State<PostServiceScreen> createState() => _PostServiceScreenState();
 }
 
-class _JobPostingScreenState extends State<JobPostingScreen> {
+class _PostServiceScreenState extends State<PostServiceScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
@@ -40,26 +40,26 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.job != null;
+    _isEditing = widget.existingService != null;
 
     // Initialize controllers
     _titleController = TextEditingController(
-      text: _isEditing ? widget.job!.title : '',
+      text: _isEditing ? widget.existingService!.title : '',
     );
     _descriptionController = TextEditingController(
-      text: _isEditing ? widget.job!.description : '',
+      text: _isEditing ? widget.existingService!.description : '',
     );
     _salaryController = TextEditingController(
-      text: _isEditing ? widget.job!.salary.toString() : '',
+      text: _isEditing ? widget.existingService!.salary.toString() : '',
     );
     _locationController = TextEditingController(
-      text: _isEditing ? widget.job!.location : '',
+      text: _isEditing ? widget.existingService!.location : '',
     );
 
     // Initialize skills list if editing
     if (_isEditing) {
-      _skills.addAll(widget.job!.requiredSkills);
-      _selectedSalaryType = widget.job!.salaryType;
+      _skills.addAll(widget.existingService!.requiredSkills);
+      _selectedSalaryType = widget.existingService!.salaryType;
     }
   }
 
@@ -89,14 +89,14 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
     });
   }
 
-  Future<void> _saveJob() async {
+  Future<void> _saveService() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
       try {
         if (_isEditing) {
-          // Update existing job
-          final updatedJob = widget.job!.copyWith(
+          // Update existing service
+          final updatedService = widget.existingService!.copyWith(
             title: _titleController.text,
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
@@ -105,22 +105,24 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
             requiredSkills: _skills,
           );
 
-          await JobService.updateJob(updatedJob);
+          await JobService.updateJob(updatedService);
         } else {
-          // Create new job
+          // Create new service
           await JobService.createJob(
-            posterId: widget.employer.id,
+            posterId: widget.helper.id,
             title: _titleController.text,
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
             salaryType: _selectedSalaryType,
             location: _locationController.text,
             requiredSkills: _skills,
+            postedByHelper:
+                true, // This is what distinguishes a helper-posted service
           );
         }
 
-        // Refresh job list and return
-        widget.onJobPosted();
+        // Refresh service list and return
+        widget.onServicePosted();
         if (mounted) {
           Navigator.pop(context);
         }
@@ -128,7 +130,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error saving job: $e')));
+          ).showSnackBar(SnackBar(content: Text('Error saving service: $e')));
         }
       } finally {
         if (mounted) {
@@ -142,7 +144,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Job' : 'Post a New Job'),
+        title: Text(_isEditing ? 'Edit Service' : 'Post a New Service'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
@@ -157,13 +159,13 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
-                  labelText: 'Job Title',
-                  hintText: 'e.g., House Cleaner, Nanny, etc.',
+                  labelText: 'Service Title',
+                  hintText: 'e.g., Experienced Nanny, Professional Cleaner',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a job title';
+                    return 'Please enter a service title';
                   }
                   return null;
                 },
@@ -174,14 +176,15 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
-                  labelText: 'Job Description',
-                  hintText: 'Describe the job responsibilities, hours, etc.',
+                  labelText: 'Service Description',
+                  hintText:
+                      'Describe your experience, qualifications, and what you offer...',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 5,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a job description';
+                    return 'Please enter a service description';
                   }
                   return null;
                 },
@@ -198,7 +201,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                     child: TextFormField(
                       controller: _salaryController,
                       decoration: const InputDecoration(
-                        labelText: 'Salary (₱)',
+                        labelText: 'Rate (₱)',
                         hintText: 'Amount',
                         border: OutlineInputBorder(),
                         prefixText: '₱ ',
@@ -206,7 +209,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a salary';
+                          return 'Please enter your rate';
                         }
                         try {
                           double.parse(value);
@@ -224,7 +227,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                     flex: 2,
                     child: DropdownButtonFormField<SalaryType>(
                       decoration: const InputDecoration(
-                        labelText: 'Payment Frequency',
+                        labelText: 'Rate Frequency',
                         border: OutlineInputBorder(),
                       ),
                       value: _selectedSalaryType,
@@ -244,7 +247,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                       },
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select a payment frequency';
+                          return 'Please select your preferred rate frequency';
                         }
                         return null;
                       },
@@ -258,13 +261,13 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               TextFormField(
                 controller: _locationController,
                 decoration: const InputDecoration(
-                  labelText: 'Location',
+                  labelText: 'Service Location',
                   hintText: 'e.g., Makati City, Manila',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a location';
+                    return 'Please enter service location';
                   }
                   return null;
                 },
@@ -273,7 +276,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
 
               // Skills section
               const Text(
-                'Required Skills',
+                'Your Skills',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -324,7 +327,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               if (_skills.isEmpty) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  'Add at least one required skill',
+                  'Add at least one skill',
                   style: TextStyle(
                     color: Colors.grey,
                     fontStyle: FontStyle.italic,
@@ -339,11 +342,13 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveJob,
+                  onPressed: _isLoading ? null : _saveService,
                   child:
                       _isLoading
                           ? const CircularProgressIndicator()
-                          : Text(_isEditing ? 'Update Job' : 'Post Job'),
+                          : Text(
+                            _isEditing ? 'Update Service' : 'Post Service',
+                          ),
                 ),
               ),
             ],

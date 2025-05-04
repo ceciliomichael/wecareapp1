@@ -49,17 +49,69 @@ class AuthService {
   }
 
   // Login user
-  static Future<User> login(String email, String password) async {
+  static Future<User?> login({
+    required String email,
+    required String password,
+    required UserType userType,
+  }) async {
     final user = await StorageService.findUserByCredentials(email, password);
 
     if (user == null) {
-      throw Exception('Invalid email or password');
+      return null; // No user found with these credentials
+    }
+
+    // Check if user type matches
+    if (user.userType != userType) {
+      return null; // User exists but type doesn't match
     }
 
     // Set as current user
     await StorageService.setCurrentUser(user.id);
 
     return user;
+  }
+
+  // Update user's last active timestamp
+  static Future<User> updateLastActive(String userId) async {
+    // Get current user
+    final users = await StorageService.getUsers();
+    final userIndex = users.indexWhere((user) => user.id == userId);
+
+    if (userIndex < 0) {
+      throw Exception('User not found');
+    }
+
+    // Update user with current timestamp
+    final updatedUser = users[userIndex].copyWith(lastActive: DateTime.now());
+    users[userIndex] = updatedUser;
+
+    // Save users
+    await StorageService.saveUsers(users);
+
+    return updatedUser;
+  }
+
+  // Update user's active status
+  static Future<User> updateActiveStatus(String userId, bool isActive) async {
+    // Get current user
+    final users = await StorageService.getUsers();
+    final userIndex = users.indexWhere((user) => user.id == userId);
+
+    if (userIndex < 0) {
+      throw Exception('User not found');
+    }
+
+    // Update user
+    final updatedUser = users[userIndex].copyWith(
+      isActive: isActive,
+      lastActive: isActive ? DateTime.now() : users[userIndex].lastActive,
+    );
+    users[userIndex] = updatedUser;
+
+    // Save users
+    await StorageService.saveUsers(users);
+
+    return updatedUser;
   }
 
   // Logout user
@@ -71,6 +123,11 @@ class AuthService {
   static Future<bool> isLoggedIn() async {
     final userId = await StorageService.getCurrentUserId();
     return userId != null && userId.isNotEmpty;
+  }
+
+  // Get current user ID
+  static Future<String?> getCurrentUserId() async {
+    return StorageService.getCurrentUserId();
   }
 
   // Get current user

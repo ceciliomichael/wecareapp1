@@ -114,36 +114,69 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.otherUser.name,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  widget.otherUser.name,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(width: 6),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: widget.otherUser.isActive ? Colors.green : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 2),
             Text(
-              'Job: ${widget.jobTitle}',
+              widget.otherUser.isActive 
+                ? 'Active now • Job: ${widget.jobTitle}'
+                : 'Inactive • Job: ${widget.jobTitle}',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: Colors.teal[700],
-              radius: 16,
-              child: Text(
-                widget.otherUser.name.isNotEmpty
-                    ? widget.otherUser.name[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+          Stack(
+            children: [
+              IconButton(
+                icon: CircleAvatar(
+                  backgroundColor: Colors.teal[700],
+                  radius: 16,
+                  child: Text(
+                    widget.otherUser.name.isNotEmpty
+                        ? widget.otherUser.name[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
+                onPressed: () {
+                  // Could open user profile in future
+                },
               ),
-            ),
-            onPressed: () {
-              // Could open user profile in future
-            },
+              if (widget.otherUser.isActive)
+                Positioned(
+                  right: 10,
+                  bottom: 8,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.teal, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

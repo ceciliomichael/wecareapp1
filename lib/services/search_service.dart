@@ -69,7 +69,7 @@ class SearchService {
       if (isActive != null && job.isActive != isActive) return false;
 
       // Filter by employer
-      if (employerId != null && job.employerId != employerId) return false;
+      if (employerId != null && job.posterId != employerId) return false;
 
       return true;
     }).toList();

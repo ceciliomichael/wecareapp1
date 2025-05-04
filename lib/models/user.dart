@@ -10,15 +10,17 @@ class User {
   password; // Note: In a real app, this would be hashed and not stored directly
   final UserType userType;
   final String? photoUrl; // base64 string
+  final bool isActive; // Whether user is currently active
+  final DateTime lastActive; // Last time user was active
 
   // Helper-specific fields
-  final String? nbiClearance; // base64 string
   final List<String>? skills;
   final String? experience;
 
   // Employer-specific fields
   final String? address;
   final String? companyName;
+  final String? nbiClearance; // base64 string for document verification
 
   User({
     required this.id,
@@ -28,12 +30,14 @@ class User {
     required this.password,
     required this.userType,
     this.photoUrl,
-    this.nbiClearance,
+    this.isActive = true,
+    DateTime? lastActive,
     this.skills,
     this.experience,
     this.address,
     this.companyName,
-  });
+    this.nbiClearance,
+  }) : this.lastActive = lastActive ?? DateTime.now();
 
   // Create a copy of this user with updated fields
   User copyWith({
@@ -44,11 +48,13 @@ class User {
     String? password,
     UserType? userType,
     String? photoUrl,
-    String? nbiClearance,
+    bool? isActive,
+    DateTime? lastActive,
     List<String>? skills,
     String? experience,
     String? address,
     String? companyName,
+    String? nbiClearance,
   }) {
     return User(
       id: id ?? this.id,
@@ -58,11 +64,13 @@ class User {
       password: password ?? this.password,
       userType: userType ?? this.userType,
       photoUrl: photoUrl ?? this.photoUrl,
-      nbiClearance: nbiClearance ?? this.nbiClearance,
+      isActive: isActive ?? this.isActive,
+      lastActive: lastActive ?? this.lastActive,
       skills: skills ?? this.skills,
       experience: experience ?? this.experience,
       address: address ?? this.address,
       companyName: companyName ?? this.companyName,
+      nbiClearance: nbiClearance ?? this.nbiClearance,
     );
   }
 
@@ -76,11 +84,13 @@ class User {
       'password': password, // In a real app, we wouldn't include this in JSON
       'userType': userType.toString(),
       'photoUrl': photoUrl,
-      'nbiClearance': nbiClearance,
+      'isActive': isActive,
+      'lastActive': lastActive.toIso8601String(),
       'skills': skills,
       'experience': experience,
       'address': address,
       'companyName': companyName,
+      'nbiClearance': nbiClearance,
     };
   }
 
@@ -97,11 +107,16 @@ class User {
               ? UserType.employer
               : UserType.helper,
       photoUrl: json['photoUrl'],
-      nbiClearance: json['nbiClearance'],
+      isActive: json['isActive'] ?? true,
+      lastActive:
+          json['lastActive'] != null
+              ? DateTime.parse(json['lastActive'])
+              : DateTime.now(),
       skills: json['skills'] != null ? List<String>.from(json['skills']) : null,
       experience: json['experience'],
       address: json['address'],
       companyName: json['companyName'],
+      nbiClearance: json['nbiClearance'],
     );
   }
 

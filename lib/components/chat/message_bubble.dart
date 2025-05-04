@@ -68,9 +68,27 @@ class MessageBubble extends StatelessWidget {
                         style: TextStyle(color: Colors.black87, fontSize: 16),
                       ),
                       SizedBox(height: 4),
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _formatTime(message.timestamp),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 11,
+                            ),
+                          ),
+                          if (isCurrentUser) SizedBox(width: 4),
+                          if (isCurrentUser)
+                            Icon(
+                              message.isRead ? Icons.done_all : Icons.done,
+                              size: 14,
+                              color:
+                                  message.isRead
+                                      ? Colors.teal
+                                      : Colors.grey[500],
+                            ),
+                        ],
                       ),
                     ],
                   ),

@@ -37,7 +37,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
     try {
       // Get all jobs by the employer
-      _jobs = await JobService.getJobsByEmployer(widget.employer.id);
+      _jobs = await JobService.getJobsByPoster(widget.employer.id);
       _jobsMap = {for (var job in _jobs) job.id: job};
 
       // Get all job IDs
