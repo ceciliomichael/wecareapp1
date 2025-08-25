@@ -16,14 +16,14 @@ class ApplicationCard extends StatelessWidget {
   final User? employer;
 
   const ApplicationCard({
-    Key? key,
+    super.key,
     required this.application,
     required this.job,
     required this.helper,
     this.onStatusChange,
     this.isEmployerView = true,
     this.employer,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class ApplicationCard extends StatelessWidget {
                     radius: 24,
                     backgroundColor: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.2),
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                     child:
                         helper.photoUrl != null
                             ? ClipRRect(
@@ -146,8 +146,8 @@ class ApplicationCard extends StatelessWidget {
                               isRequired
                                   ? Theme.of(
                                     context,
-                                  ).colorScheme.secondary.withOpacity(0.2)
-                                  : Colors.grey.withOpacity(0.1),
+                                  ).colorScheme.secondary.withValues(alpha: 0.2)
+                                  : Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -161,7 +161,7 @@ class ApplicationCard extends StatelessWidget {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                 ],
               ),
               // Action buttons
@@ -224,22 +224,22 @@ class ApplicationCard extends StatelessWidget {
 
     switch (status) {
       case 'pending':
-        bgColor = Colors.amber.withOpacity(0.2);
+        bgColor = Colors.amber.withValues(alpha: 0.2);
         textColor = Colors.amber.shade800;
         label = 'Pending';
         break;
       case 'accepted':
-        bgColor = Colors.green.withOpacity(0.2);
+        bgColor = Colors.green.withValues(alpha: 0.2);
         textColor = Colors.green.shade700;
         label = 'Accepted';
         break;
       case 'rejected':
-        bgColor = Colors.red.withOpacity(0.2);
+        bgColor = Colors.red.withValues(alpha: 0.2);
         textColor = Colors.red.shade700;
         label = 'Rejected';
         break;
       default:
-        bgColor = Colors.grey.withOpacity(0.2);
+        bgColor = Colors.grey.withValues(alpha: 0.2);
         textColor = Colors.grey.shade700;
         label = status;
     }
@@ -280,22 +280,26 @@ class ApplicationCard extends StatelessWidget {
       );
 
       // Navigate to chat screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => ChatScreen(
-                conversation: conversation,
-                currentUser: currentUser,
-                otherUser: otherUser,
-                jobTitle: job.title,
-              ),
-        ),
-      );
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => ChatScreen(
+                  conversation: conversation,
+                  currentUser: currentUser,
+                  otherUser: otherUser,
+                  jobTitle: job.title,
+                ),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error opening chat: $e')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error opening chat: $e')));
+      }
     }
   }
 }

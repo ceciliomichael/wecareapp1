@@ -9,11 +9,11 @@ class ReviewForm extends StatefulWidget {
   final Function(bool) onComplete;
 
   const ReviewForm({
-    Key? key,
+    super.key,
     required this.reviewerId,
     required this.targetId,
     required this.onComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<ReviewForm> createState() => _ReviewFormState();

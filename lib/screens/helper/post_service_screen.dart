@@ -10,11 +10,11 @@ class PostServiceScreen extends StatefulWidget {
   final Job? existingService; // Null for new service, non-null for editing
 
   const PostServiceScreen({
-    Key? key,
+    super.key,
     required this.helper,
     required this.onServicePosted,
     this.existingService,
-  }) : super(key: key);
+  });
 
   @override
   State<PostServiceScreen> createState() => _PostServiceScreenState();
@@ -319,7 +319,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
                         onDeleted: () => _removeSkill(skill),
                         backgroundColor: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                       );
                     }).toList(),
               ),

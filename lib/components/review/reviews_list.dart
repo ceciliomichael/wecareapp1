@@ -10,12 +10,12 @@ class ReviewsList extends StatefulWidget {
   final Function()? onReviewAdded;
 
   const ReviewsList({
-    Key? key,
+    super.key,
     required this.userId,
     this.showAddReview = false,
     this.reviewerId,
     this.onReviewAdded,
-  }) : super(key: key);
+  });
 
   @override
   State<ReviewsList> createState() => _ReviewsListState();
@@ -186,15 +186,15 @@ class _ReviewsListState extends State<ReviewsList> {
   }
 
   Widget _buildReviewForm() {
-    final _formKey = GlobalKey<FormState>();
-    final _commentController = TextEditingController();
-    double _rating = 0;
-    bool _isSubmitting = false;
+    final formKey = GlobalKey<FormState>();
+    final commentController = TextEditingController();
+    double rating = 0;
+    bool isSubmitting = false;
 
     return StatefulBuilder(
       builder: (context, setState) {
         return Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -204,13 +204,13 @@ class _ReviewsListState extends State<ReviewsList> {
                   for (int i = 1; i <= 5; i++)
                     IconButton(
                       icon: Icon(
-                        i <= _rating ? Icons.star : Icons.star_border,
-                        color: i <= _rating ? Colors.amber : Colors.grey,
+                        i <= rating ? Icons.star : Icons.star_border,
+                        color: i <= rating ? Colors.amber : Colors.grey,
                         size: 32,
                       ),
                       onPressed: () {
                         setState(() {
-                          _rating = i.toDouble();
+                          rating = i.toDouble();
                         });
                       },
                     ),
@@ -218,7 +218,7 @@ class _ReviewsListState extends State<ReviewsList> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _commentController,
+                controller: commentController,
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Your Review',
@@ -253,21 +253,21 @@ class _ReviewsListState extends State<ReviewsList> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed:
-                          _isSubmitting
+                          isSubmitting
                               ? null
                               : () async {
-                                if (_formKey.currentState!.validate() &&
-                                    _rating > 0) {
+                                if (formKey.currentState!.validate() &&
+                                    rating > 0) {
                                   setState(() {
-                                    _isSubmitting = true;
+                                    isSubmitting = true;
                                   });
 
                                   try {
                                     await ReviewService.createReview(
                                       reviewerId: widget.reviewerId!,
                                       targetId: widget.userId,
-                                      rating: _rating,
-                                      comment: _commentController.text,
+                                      rating: rating,
+                                      comment: commentController.text,
                                     );
 
                                     // Reload reviews
@@ -278,12 +278,12 @@ class _ReviewsListState extends State<ReviewsList> {
                                     _loadReviews();
 
                                     // Close dialog
-                                    if (mounted) {
+                                    if (mounted && context.mounted) {
                                       Navigator.pop(context);
                                     }
 
                                     // Show success message
-                                    if (mounted) {
+                                    if (mounted && context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -297,11 +297,11 @@ class _ReviewsListState extends State<ReviewsList> {
                                     }
                                   } catch (e) {
                                     setState(() {
-                                      _isSubmitting = false;
+                                      isSubmitting = false;
                                     });
 
                                     // Show error message
-                                    if (mounted) {
+                                    if (mounted && context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -314,13 +314,15 @@ class _ReviewsListState extends State<ReviewsList> {
                                       );
                                     }
                                   }
-                                } else if (_rating == 0) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please select a rating'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                } else if (rating == 0) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please select a rating'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 }
                               },
                       style: ElevatedButton.styleFrom(
@@ -328,7 +330,7 @@ class _ReviewsListState extends State<ReviewsList> {
                         foregroundColor: Colors.white,
                       ),
                       child:
-                          _isSubmitting
+                          isSubmitting
                               ? const SizedBox(
                                 height: 20,
                                 width: 20,

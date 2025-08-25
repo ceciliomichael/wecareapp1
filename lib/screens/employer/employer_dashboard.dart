@@ -4,6 +4,8 @@ import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/auth_service.dart';
 import '../../services/job_service.dart';
+import '../../services/contact_helper_service.dart';
+import '../../services/storage_service.dart';
 import '../auth/auth_screen.dart';
 import '../chat/conversations_list_screen.dart';
 import 'job_posting_screen.dart';
@@ -11,11 +13,12 @@ import 'my_jobs_screen.dart';
 import 'applications_screen.dart';
 import 'employer_profile_screen.dart';
 import 'helper_services_screen.dart';
+import 'subscription_screen.dart';
 
 class EmployerDashboard extends StatefulWidget {
   final User employer;
 
-  const EmployerDashboard({Key? key, required this.employer}) : super(key: key);
+  const EmployerDashboard({super.key, required this.employer});
 
   @override
   State<EmployerDashboard> createState() => _EmployerDashboardState();
@@ -68,18 +71,22 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       _buildHomePage(),
       MyJobsScreen(employer: widget.employer),
       ApplicationsScreen(employer: widget.employer),
       EmployerProfileScreen(employer: widget.employer),
     ];
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
         // If on home tab, show exit confirmation
         if (_currentIndex == 0) {
-          return await showDialog(
+          final shouldPop =
+              await showDialog<bool>(
                 context: context,
                 builder:
                     (context) => AlertDialog(
@@ -100,6 +107,10 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
                     ),
               ) ??
               false;
+
+          if (shouldPop && mounted && context.mounted) {
+            Navigator.of(context).pop();
+          }
         } else {
           // If on other tabs, navigate to home tab
           setState(() {
@@ -110,7 +121,6 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
               curve: Curves.easeInOut,
             );
           });
-          return false;
         }
       },
       child: Scaffold(
@@ -134,7 +144,7 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
               _currentIndex = index;
             });
           },
-          children: _pages,
+          children: pages,
         ),
         floatingActionButton:
             _currentIndex == 0 || _currentIndex == 1
@@ -151,8 +161,8 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
                       ),
                     );
                   },
-                  child: const Icon(Icons.add),
                   tooltip: 'Post a New Job',
+                  child: const Icon(Icons.add),
                 )
                 : null,
         bottomNavigationBar: BottomNavigationBar(
@@ -288,6 +298,31 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
                           label: 'Messages',
                           color: Colors.green[600]!,
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildActionButton(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => SubscriptionScreen(
+                                      employer: widget.employer,
+                                    ),
+                              ),
+                            );
+                          },
+                          icon: Icons.star,
+                          label: 'Premium',
+                          color: Colors.purple,
+                        ),
+                        const SizedBox(width: 80),
+                        const SizedBox(width: 80),
+                        const SizedBox(width: 80),
                       ],
                     ),
                   ],
@@ -442,7 +477,7 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28),
@@ -498,8 +533,8 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
                   decoration: BoxDecoration(
                     color:
                         job.isActive
-                            ? Colors.green.withOpacity(0.2)
-                            : Colors.grey.withOpacity(0.2),
+                            ? Colors.green.withValues(alpha: 0.2)
+                            : Colors.grey.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -615,7 +650,7 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
           ),
           child: const Icon(Icons.handyman, color: Colors.blue, size: 24),
@@ -663,7 +698,7 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.2),
+                color: Colors.green.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -677,7 +712,19 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
             ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chat, color: Colors.teal),
+              onPressed: () async {
+                await _contactHelperForService(job);
+              },
+              tooltip: 'Contact Helper',
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: () {
           // Navigate to the helper services screen with this job pre-selected
           Navigator.push(
@@ -690,6 +737,31 @@ class _EmployerDashboardState extends State<EmployerDashboard> {
         },
       ),
     );
+  }
+
+  Future<void> _contactHelperForService(Job job) async {
+    try {
+      final users = await StorageService.getUsers();
+      final helper = users.firstWhere(
+        (user) => user.id == job.posterId,
+        orElse: () => throw Exception('Helper not found'),
+      );
+
+      if (mounted) {
+        await ContactHelperService.contactHelperForJob(
+          context: context,
+          employer: widget.employer,
+          helper: helper,
+          job: job,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error contacting helper: $e')));
+      }
+    }
   }
 
   Future<void> _handleLogout() async {

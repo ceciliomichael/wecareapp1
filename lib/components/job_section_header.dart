@@ -6,11 +6,11 @@ class JobSectionHeader extends StatelessWidget {
   final Color? textColor;
 
   const JobSectionHeader({
-    Key? key,
+    super.key,
     required this.title,
     this.onViewAllPressed,
     this.textColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -4,13 +4,11 @@ import '../../models/application.dart';
 import '../../models/job.dart';
 import '../../services/application_service.dart';
 import '../../services/job_service.dart';
-import 'helper_dashboard.dart';
 
 class MyApplicationsScreen extends StatefulWidget {
   final User helper;
 
-  const MyApplicationsScreen({Key? key, required this.helper})
-    : super(key: key);
+  const MyApplicationsScreen({super.key, required this.helper});
 
   @override
   State<MyApplicationsScreen> createState() => _MyApplicationsScreenState();
@@ -211,7 +209,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -296,10 +294,10 @@ class ApplicationDetailScreen extends StatelessWidget {
   final Job job;
 
   const ApplicationDetailScreen({
-    Key? key,
+    super.key,
     required this.application,
     required this.job,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +355,7 @@ class ApplicationDetailScreen extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
+                            color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(

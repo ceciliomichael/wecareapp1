@@ -13,18 +13,18 @@ class ChatScreen extends StatefulWidget {
   final String jobTitle;
 
   const ChatScreen({
-    Key? key,
+    super.key,
     required this.conversation,
     required this.currentUser,
     required this.otherUser,
     required this.jobTitle,
-  }) : super(key: key);
+  });
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  ChatScreenState createState() => ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class ChatScreenState extends State<ChatScreen> {
   final MessageService _messageService = MessageService();
   final TextEditingController _messageController = TextEditingController();
   late StreamSubscription<List<Message>> _messagesSubscription;
@@ -68,13 +68,15 @@ class _ChatScreenState extends State<ChatScreen> {
             );
           });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading messages: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading messages: $e')));
+      }
     }
   }
 
@@ -96,9 +98,11 @@ class _ChatScreenState extends State<ChatScreen> {
       // Clear the text field
       _messageController.clear();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error sending message: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending message: $e')));
+      }
     } finally {
       setState(() {
         _isSending = false;
@@ -125,7 +129,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: widget.otherUser.isActive ? Colors.green : Colors.grey,
+                    color:
+                        widget.otherUser.isActive ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -133,9 +138,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             SizedBox(height: 2),
             Text(
-              widget.otherUser.isActive 
-                ? 'Active now • Job: ${widget.jobTitle}'
-                : 'Inactive • Job: ${widget.jobTitle}',
+              widget.otherUser.isActive
+                  ? 'Active now • Job: ${widget.jobTitle}'
+                  : 'Inactive • Job: ${widget.jobTitle}',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
@@ -238,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 BoxShadow(
                   offset: Offset(0, -2),
                   blurRadius: 4,
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                 ),
               ],
             ),

@@ -14,7 +14,7 @@ class AuthService {
     required String password,
     required UserType userType,
     String? photoUrl,
-    String? nbiClearance,
+    String? barangayClearance,
     List<String>? skills,
     String? experience,
     String? address,
@@ -35,7 +35,7 @@ class AuthService {
       password: password, // In a real app, this would be hashed
       userType: userType,
       photoUrl: photoUrl,
-      nbiClearance: nbiClearance,
+      barangayClearance: barangayClearance,
       skills: skills,
       experience: experience,
       address: address,
@@ -141,10 +141,10 @@ class AuthService {
     return updatedUser;
   }
 
-  // Update NBI clearance
-  static Future<User> updateNBIClearance(
+  // Update Barangay clearance
+  static Future<User> updateBarangayClearance(
     String userId,
-    String nbiClearance,
+    String barangayClearance,
   ) async {
     // Get current user
     final users = await StorageService.getUsers();
@@ -155,7 +155,7 @@ class AuthService {
     }
 
     // Update user
-    final updatedUser = users[userIndex].copyWith(nbiClearance: nbiClearance);
+    final updatedUser = users[userIndex].copyWith(barangayClearance: barangayClearance);
     users[userIndex] = updatedUser;
 
     // Save users

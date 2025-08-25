@@ -6,11 +6,11 @@ class ActivityStatusIndicator extends StatelessWidget {
   final bool showText;
 
   const ActivityStatusIndicator({
-    Key? key,
+    super.key,
     required this.isActive,
     this.size = 12.0,
     this.showText = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class ActivityStatusIndicator extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.5),
+                color: color.withValues(alpha: 0.5),
                 blurRadius: 4,
                 spreadRadius: 1,
               ),

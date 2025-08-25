@@ -388,23 +388,25 @@ class _LoginScreenState extends State<LoginScreen> {
           await AuthService.updateLastActive(user.id);
 
           // Navigate to the appropriate dashboard
-          if (user.userType == UserType.employer) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => EmployerDashboard(employer: _loggedInUser!),
-              ),
-              (route) => false, // Remove all previous routes
-            );
-          } else {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HelperDashboard(helper: _loggedInUser!),
-              ),
-              (route) => false, // Remove all previous routes
-            );
+          if (mounted) {
+            if (user.userType == UserType.employer) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => EmployerDashboard(employer: _loggedInUser!),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HelperDashboard(helper: _loggedInUser!),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            }
           }
         } else {
           if (mounted) {

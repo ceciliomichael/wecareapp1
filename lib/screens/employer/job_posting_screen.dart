@@ -3,6 +3,7 @@ import '../../models/user.dart';
 import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
+import '../../constants/bohol_locations.dart';
 
 class JobPostingScreen extends StatefulWidget {
   final User employer;
@@ -10,11 +11,11 @@ class JobPostingScreen extends StatefulWidget {
   final Job? job; // Null for new job, non-null for editing
 
   const JobPostingScreen({
-    Key? key,
+    super.key,
     required this.employer,
     required this.onJobPosted,
     this.job,
-  }) : super(key: key);
+  });
 
   @override
   State<JobPostingScreen> createState() => _JobPostingScreenState();
@@ -25,7 +26,8 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _salaryController;
-  late TextEditingController _locationController;
+
+  String? _selectedLocation;
 
   // For skills input
   final TextEditingController _skillController = TextEditingController();
@@ -52,12 +54,9 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
     _salaryController = TextEditingController(
       text: _isEditing ? widget.job!.salary.toString() : '',
     );
-    _locationController = TextEditingController(
-      text: _isEditing ? widget.job!.location : '',
-    );
-
-    // Initialize skills list if editing
+    // Initialize location if editing
     if (_isEditing) {
+      _selectedLocation = widget.job!.location;
       _skills.addAll(widget.job!.requiredSkills);
       _selectedSalaryType = widget.job!.salaryType;
     }
@@ -68,7 +67,6 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _salaryController.dispose();
-    _locationController.dispose();
     _skillController.dispose();
     super.dispose();
   }
@@ -101,7 +99,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
             salaryType: _selectedSalaryType,
-            location: _locationController.text,
+            location: _selectedLocation!,
             requiredSkills: _skills,
           );
 
@@ -114,7 +112,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
             salaryType: _selectedSalaryType,
-            location: _locationController.text,
+            location: _selectedLocation!,
             requiredSkills: _skills,
           );
         }
@@ -254,17 +252,42 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Location field
-              TextFormField(
-                controller: _locationController,
+              // Location dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedLocation,
                 decoration: const InputDecoration(
-                  labelText: 'Location',
-                  hintText: 'e.g., Makati City, Manila',
+                  labelText: 'Location in Bohol',
+                  hintText: 'Select municipality/city',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
+                items:
+                    BoholLocations.allLocations.map((String location) {
+                      return DropdownMenuItem<String>(
+                        value: location,
+                        child: Row(
+                          children: [
+                            Text(location),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${BoholLocations.getLocationType(location)})',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedLocation = value;
+                  });
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a location';
+                    return 'Please select a location';
                   }
                   return null;
                 },
@@ -316,7 +339,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                         onDeleted: () => _removeSkill(skill),
                         backgroundColor: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                       );
                     }).toList(),
               ),

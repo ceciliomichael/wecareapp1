@@ -9,17 +9,16 @@ import '../../components/review/review_card.dart';
 import '../../components/review/review_form.dart';
 import '../../models/review.dart';
 import '../../services/review_service.dart';
-import '../../services/storage_service.dart';
 
 class EmployerProfileScreen extends StatefulWidget {
   final User employer;
   final bool isCurrentUser;
 
   const EmployerProfileScreen({
-    Key? key,
+    super.key,
     required this.employer,
     this.isCurrentUser = false,
-  }) : super(key: key);
+  });
 
   @override
   State<EmployerProfileScreen> createState() => _EmployerProfileScreenState();
@@ -103,7 +102,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
     }
   }
 
-  Future<void> _pickNBIImage() async {
+  Future<void> _pickBarangayImage() async {
     try {
       setState(() {
         _isLoading = true;
@@ -112,8 +111,8 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
       final imageBase64 = await ImageService.pickImageAsBase64();
 
       if (imageBase64 != null) {
-        // Update NBI clearance
-        final updatedUser = await AuthService.updateNBIClearance(
+        // Update Barangay clearance
+        final updatedUser = await AuthService.updateBarangayClearance(
           _employer.id,
           imageBase64,
         );
@@ -124,14 +123,16 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('NBI Clearance updated successfully')),
+            const SnackBar(
+              content: Text('Barangay Clearance updated successfully'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating NBI clearance: $e')),
+          SnackBar(content: Text('Error updating Barangay clearance: $e')),
         );
       }
     } finally {
@@ -322,7 +323,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                 radius: 60,
                 backgroundColor: Theme.of(
                   context,
-                ).colorScheme.primary.withOpacity(0.2),
+                ).colorScheme.primary.withValues(alpha: 0.2),
                 child:
                     _employer.photoUrl != null
                         ? ClipRRect(
@@ -406,7 +407,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'NBI Clearance',
+                        'Barangay Clearance',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -415,14 +416,14 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.upload_file),
-                        onPressed: _isLoading ? null : _pickNBIImage,
-                        tooltip: 'Update NBI Clearance',
+                        onPressed: _isLoading ? null : _pickBarangayImage,
+                        tooltip: 'Update Barangay Clearance',
                         color: Theme.of(context).colorScheme.secondary,
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (_employer.nbiClearance != null)
+                  if (_employer.barangayClearance != null)
                     Container(
                       width: double.infinity,
                       height: 200,
@@ -433,7 +434,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.memory(
-                          base64Decode(_employer.nbiClearance!),
+                          base64Decode(_employer.barangayClearance!),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -457,7 +458,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'No NBI Clearance uploaded',
+                            'No Barangay Clearance uploaded',
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         ],
@@ -624,7 +625,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton.icon(
                           onPressed: () {
-                            // TODO: Navigate to full reviews page
+                            // Navigate to full reviews page (to be implemented)
                           },
                           icon: const Icon(Icons.arrow_forward),
                           label: const Text('See all reviews'),
@@ -711,7 +712,7 @@ class _EmployerProfileScreenState extends State<EmployerProfileScreen> {
                   radius: 60,
                   backgroundColor: Theme.of(
                     context,
-                  ).colorScheme.primary.withOpacity(0.2),
+                  ).colorScheme.primary.withValues(alpha: 0.2),
                   child:
                       _employer.photoUrl != null
                           ? ClipRRect(

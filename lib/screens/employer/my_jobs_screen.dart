@@ -8,7 +8,7 @@ import 'job_posting_screen.dart';
 class MyJobsScreen extends StatefulWidget {
   final User employer;
 
-  const MyJobsScreen({Key? key, required this.employer}) : super(key: key);
+  const MyJobsScreen({super.key, required this.employer});
 
   @override
   State<MyJobsScreen> createState() => _MyJobsScreenState();

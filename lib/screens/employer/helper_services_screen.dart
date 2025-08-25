@@ -3,13 +3,13 @@ import '../../models/user.dart';
 import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
-import '../../components/job_card.dart';
+import '../../services/contact_helper_service.dart';
+import '../../services/storage_service.dart';
 
 class HelperServicesScreen extends StatefulWidget {
   final User employer;
 
-  const HelperServicesScreen({Key? key, required this.employer})
-    : super(key: key);
+  const HelperServicesScreen({super.key, required this.employer});
 
   @override
   State<HelperServicesScreen> createState() => _HelperServicesScreenState();
@@ -64,7 +64,19 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
     }
   }
 
-  void _viewServiceDetails(Job service) {
+  Future<void> _viewServiceDetails(Job service) async {
+    // Get the helper who posted this service
+    final helper = await _getHelperForService(service);
+
+    if (!mounted) return;
+
+    if (helper == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Helper information not available')),
+      );
+      return;
+    }
+
     // Show service details dialog
     showDialog(
       context: context,
@@ -76,6 +88,52 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Helper info
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        child: Text(
+                          helper.name.isNotEmpty ? helper.name[0] : '?',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              helper.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (helper.isActive)
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.circle,
+                                    color: Colors.green,
+                                    size: 8,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Active now',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
                   Text('Location: ${service.location}'),
                   const SizedBox(height: 8),
                   Text(
@@ -100,7 +158,7 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
                         service.requiredSkills.map((skill) {
                           return Chip(
                             label: Text(skill),
-                            backgroundColor: Colors.blue.withOpacity(0.1),
+                            backgroundColor: Colors.blue.withValues(alpha: 0.1),
                           );
                         }).toList(),
                   ),
@@ -109,26 +167,37 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 child: const Text('Close'),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  // Here you would implement contact functionality
+              ElevatedButton.icon(
+                onPressed: () async {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Contact functionality coming soon'),
-                    ),
+                  await ContactHelperService.contactHelperForJob(
+                    context: context,
+                    employer: widget.employer,
+                    helper: helper,
+                    job: service,
                   );
                 },
-                child: const Text('Contact Helper'),
+                icon: const Icon(Icons.chat, size: 18),
+                label: const Text('Contact Helper'),
               ),
             ],
           ),
     );
+  }
+
+  Future<User?> _getHelperForService(Job service) async {
+    try {
+      final users = await StorageService.getUsers();
+      return users.firstWhere(
+        (user) => user.id == service.posterId,
+        orElse: () => throw Exception('Helper not found'),
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -237,7 +306,7 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
                 flex: 2,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   width: double.infinity,
@@ -296,7 +365,7 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${service.salary.toStringAsFixed(2)} ${service.salaryType.label}',
+                          '₱${service.salary.toStringAsFixed(2)} ${service.salaryType.label}',
                           style: TextStyle(
                             color: Colors.green[700],
                             fontWeight: FontWeight.bold,
@@ -310,8 +379,36 @@ class _HelperServicesScreenState extends State<HelperServicesScreen> {
                       child: Text(
                         service.description,
                         style: const TextStyle(fontSize: 12),
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Contact button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final helper = await _getHelperForService(service);
+                          if (helper != null && mounted) {
+                            await ContactHelperService.contactHelperForJob(
+                              context: context,
+                              employer: widget.employer,
+                              helper: helper,
+                              job: service,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.chat, size: 16),
+                        label: const Text(
+                          'Contact',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ),
                   ],

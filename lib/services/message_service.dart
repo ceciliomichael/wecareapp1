@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/message.dart';
 import '../models/conversation.dart';
@@ -152,11 +153,7 @@ class MessageService {
     String senderId,
   ) async {
     try {
-      // Determine who should receive the notification
-      final recipientId =
-          senderId == conversation.employerId
-              ? conversation.helperId
-              : conversation.employerId;
+      // Get sender name
 
       // Get sender name
       final users = await StorageService.getUsers();
@@ -182,7 +179,7 @@ class MessageService {
       );
     } catch (e) {
       // Log error but don't throw exception - notification failure shouldn't break messaging
-      print('Error sending notification: $e');
+      debugPrint('Error sending notification: $e');
     }
   }
 

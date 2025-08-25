@@ -6,11 +6,11 @@ class DetailedRatingBreakdown extends StatelessWidget {
   final int reviewCount;
 
   const DetailedRatingBreakdown({
-    Key? key,
+    super.key,
     required this.overallRating,
     required this.categoryRatings,
     required this.reviewCount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

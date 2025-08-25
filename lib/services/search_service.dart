@@ -3,15 +3,10 @@ import 'package:wecareapp1/models/user.dart';
 import 'package:wecareapp1/models/user_type.dart';
 import 'package:wecareapp1/models/application.dart';
 import 'package:wecareapp1/services/job_service.dart';
-import 'package:wecareapp1/services/auth_service.dart';
 import 'package:wecareapp1/services/application_service.dart';
 import 'package:wecareapp1/services/storage_service.dart';
 
 class SearchService {
-  final JobService _jobService;
-  final AuthService _authService;
-  final ApplicationService _applicationService;
-
   // Singleton pattern
   static final SearchService _instance = SearchService._internal();
 
@@ -19,10 +14,7 @@ class SearchService {
     return _instance;
   }
 
-  SearchService._internal()
-    : _jobService = JobService(),
-      _authService = AuthService(),
-      _applicationService = ApplicationService();
+  SearchService._internal();
 
   // Search jobs by various criteria
   Future<List<Job>> searchJobs({
@@ -61,8 +53,9 @@ class SearchService {
 
       // Filter by location
       if (location != null && location.isNotEmpty) {
-        if (!job.location.toLowerCase().contains(location.toLowerCase()))
+        if (!job.location.toLowerCase().contains(location.toLowerCase())) {
           return false;
+        }
       }
 
       // Filter by active status
@@ -142,10 +135,12 @@ class SearchService {
       if (status != null && application.status != status) return false;
 
       // Filter by date range
-      if (fromDate != null && application.dateApplied.isBefore(fromDate))
+      if (fromDate != null && application.dateApplied.isBefore(fromDate)) {
         return false;
-      if (toDate != null && application.dateApplied.isAfter(toDate))
+      }
+      if (toDate != null && application.dateApplied.isAfter(toDate)) {
         return false;
+      }
 
       return true;
     }).toList();

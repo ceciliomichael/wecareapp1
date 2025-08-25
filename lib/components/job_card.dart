@@ -11,14 +11,14 @@ class JobCard extends StatelessWidget {
   final bool showActions;
 
   const JobCard({
-    Key? key,
+    super.key,
     required this.job,
     this.onTap,
     this.onEdit,
     this.onDelete,
     this.onToggleStatus,
     this.showActions = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +82,8 @@ class JobCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color:
                           job.isActive
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.grey.withOpacity(0.2),
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -127,6 +127,16 @@ class JobCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
               const SizedBox(height: 12),
+              // Optional: Add small map preview
+              // Uncomment the lines below to show location on map
+              // Container(
+              //   height: 100,
+              //   child: JobLocationMapWidget(
+              //     location: job.location,
+              //     height: 100,
+              //   ),
+              // ),
+              const SizedBox(height: 12),
               // Skills
               Wrap(
                 spacing: 8,
@@ -141,7 +151,7 @@ class JobCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.1),
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

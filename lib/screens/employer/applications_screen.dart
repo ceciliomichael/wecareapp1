@@ -10,8 +10,7 @@ import '../../components/application_card.dart';
 class ApplicationsScreen extends StatefulWidget {
   final User employer;
 
-  const ApplicationsScreen({Key? key, required this.employer})
-    : super(key: key);
+  const ApplicationsScreen({super.key, required this.employer});
 
   @override
   State<ApplicationsScreen> createState() => _ApplicationsScreenState();
@@ -187,98 +186,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ),
         );
       },
-    );
-  }
-
-  void _showApplicationDetailsDialog(Application app, Job job, User helper) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('${helper.name}\'s Application'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Job: ${job.title}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Status: ${app.status.toUpperCase()}'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Applied on: ${app.dateApplied.toString().substring(0, 10)}',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Cover Letter:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(app.coverLetter ?? 'No cover letter provided'),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Helper Information:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('Email: ${helper.email}'),
-                  Text('Phone: ${helper.phone}'),
-                  if (helper.skills != null && helper.skills!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Skills:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      children:
-                          helper.skills!.map((skill) {
-                            return Chip(
-                              label: Text(skill),
-                              backgroundColor:
-                                  job.requiredSkills.contains(skill)
-                                      ? Colors.green.withOpacity(0.2)
-                                      : Colors.grey.withOpacity(0.2),
-                            );
-                          }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-              if (app.status == 'pending') ...[
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _updateApplicationStatus(app.id, 'rejected');
-                  },
-                  child: const Text(
-                    'Reject',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _updateApplicationStatus(app.id, 'accepted');
-                  },
-                  child: const Text('Accept'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                ),
-              ],
-            ],
-          ),
     );
   }
 

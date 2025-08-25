@@ -14,7 +14,7 @@ import 'post_service_screen.dart';
 class HelperDashboard extends StatefulWidget {
   final User helper;
 
-  const HelperDashboard({Key? key, required this.helper}) : super(key: key);
+  const HelperDashboard({super.key, required this.helper});
 
   @override
   State<HelperDashboard> createState() => _HelperDashboardState();
@@ -115,7 +115,7 @@ class _HelperDashboardState extends State<HelperDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       _buildHomePage(),
       JobBrowseScreen(helper: widget.helper),
       MyApplicationsScreen(helper: widget.helper),
@@ -143,7 +143,7 @@ class _HelperDashboardState extends State<HelperDashboard> {
             _currentIndex = index;
           });
         },
-        children: _pages,
+        children: pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -421,7 +421,7 @@ class _HelperDashboardState extends State<HelperDashboard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -572,8 +572,8 @@ class _HelperDashboardState extends State<HelperDashboard> {
                     decoration: BoxDecoration(
                       color:
                           service.isActive
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -604,7 +604,7 @@ class _HelperDashboardState extends State<HelperDashboard> {
                                       decoration: BoxDecoration(
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.primary.withOpacity(0.1),
+                                        ).colorScheme.primary.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -630,8 +630,7 @@ class JobDetailScreen extends StatelessWidget {
   final Job job;
   final User helper;
 
-  const JobDetailScreen({Key? key, required this.job, required this.helper})
-    : super(key: key);
+  const JobDetailScreen({super.key, required this.job, required this.helper});
 
   @override
   Widget build(BuildContext context) {
@@ -685,7 +684,7 @@ class JobDetailScreen extends StatelessWidget {
                       label: Text(skill),
                       backgroundColor: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.1),
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     );
                   }).toList(),
@@ -746,8 +745,7 @@ class ApplyJobScreen extends StatefulWidget {
   final Job job;
   final User helper;
 
-  const ApplyJobScreen({Key? key, required this.job, required this.helper})
-    : super(key: key);
+  const ApplyJobScreen({super.key, required this.job, required this.helper});
 
   @override
   State<ApplyJobScreen> createState() => _ApplyJobScreenState();
@@ -799,7 +797,7 @@ class _ApplyJobScreenState extends State<ApplyJobScreen> {
           _isSubmitting = false;
         });
         // Log the error details to help with debugging
-        print('Error submitting application: $e');
+        debugPrint('Error submitting application: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

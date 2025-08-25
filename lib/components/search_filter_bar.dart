@@ -9,13 +9,13 @@ class SearchFilterBar extends StatefulWidget {
   final bool isLoading;
 
   const SearchFilterBar({
-    Key? key,
+    super.key,
     required this.onSearch,
     required this.onFilter,
     this.hintText = 'Search...',
     this.showFilterButton = true,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   State<SearchFilterBar> createState() => _SearchFilterBarState();
@@ -55,7 +55,7 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

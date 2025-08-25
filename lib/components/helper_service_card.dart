@@ -3,23 +3,26 @@ import 'dart:convert';
 import '../models/job.dart';
 import '../models/user.dart';
 import '../models/salary_type.dart';
+import '../services/contact_helper_service.dart';
 import 'activity_status_indicator.dart';
 
 class HelperServiceCard extends StatelessWidget {
   final Job service;
   final User helper;
+  final User? employer;
   final Function() onTap;
   final Function()? onContactPressed;
   final bool isDetailed;
 
   const HelperServiceCard({
-    Key? key,
+    super.key,
     required this.service,
     required this.helper,
+    this.employer,
     required this.onTap,
     this.onContactPressed,
     this.isDetailed = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +153,7 @@ class HelperServiceCard extends StatelessWidget {
                             label: Text(skill),
                             backgroundColor: Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.1),
+                            ).colorScheme.primary.withValues(alpha: 0.1),
                             labelStyle: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -161,11 +164,22 @@ class HelperServiceCard extends StatelessWidget {
                 ],
 
                 // Contact button
-                if (onContactPressed != null)
+                if (onContactPressed != null || employer != null)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: onContactPressed,
+                      onPressed:
+                          onContactPressed ??
+                          () async {
+                            if (employer != null) {
+                              await ContactHelperService.contactHelperForJob(
+                                context: context,
+                                employer: employer!,
+                                helper: helper,
+                                job: service,
+                              );
+                            }
+                          },
                       icon: const Icon(Icons.message),
                       label: const Text('Contact Helper'),
                       style: ElevatedButton.styleFrom(

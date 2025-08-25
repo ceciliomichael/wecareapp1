@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+.taskmaster/
+
+.cursorrules
+
+.env
+.env.local
+.taskmaster
+.env.development
+.env.production
+.env.test

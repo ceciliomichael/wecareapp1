@@ -1,10 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
 import '../../models/user_type.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
+import '../../constants/bohol_locations.dart';
 import 'login_screen.dart';
+
+// Custom input formatter for Philippine phone numbers
+class PhilippinePhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    const prefix = '+63 ';
+
+    // If the text doesn't start with prefix, add it
+    if (!newValue.text.startsWith(prefix)) {
+      // Extract only digits from the input
+      final digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+      final limitedDigits =
+          digitsOnly.length > 10 ? digitsOnly.substring(0, 10) : digitsOnly;
+
+      return TextEditingValue(
+        text: prefix + limitedDigits,
+        selection: TextSelection.collapsed(
+          offset: prefix.length + limitedDigits.length,
+        ),
+      );
+    }
+
+    // Extract digits after prefix
+    final afterPrefix = newValue.text.substring(prefix.length);
+    final digitsOnly = afterPrefix.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Limit to 10 digits maximum
+    final limitedDigits =
+        digitsOnly.length > 10 ? digitsOnly.substring(0, 10) : digitsOnly;
+
+    return TextEditingValue(
+      text: prefix + limitedDigits,
+      selection: TextSelection.collapsed(
+        offset: prefix.length + limitedDigits.length,
+      ),
+    );
+  }
+}
 
 class RegisterScreen extends StatefulWidget {
   final UserType userType;
@@ -26,13 +68,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _selectedSkill;
   String? _selectedExperience;
+  String? _selectedLocation;
   String? _profileImageBase64;
-  String? _nbiClearanceBase64;
+  String? _barangayClearanceBase64;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
   bool _isLoading = false;
+
+  // Focus node for phone number field
+  final FocusNode _phoneFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Add listener to phone focus node
+    _phoneFocusNode.addListener(() {
+      if (_phoneFocusNode.hasFocus && _phoneController.text.isEmpty) {
+        setState(() {
+          _phoneController.text = '+63 ';
+          _phoneController.selection = TextSelection.collapsed(offset: 4);
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -42,6 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _addressController.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
@@ -55,12 +117,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // Pick NBI clearance image
-  Future<void> _pickNBIClearance() async {
+  // Pick Barangay clearance image
+  Future<void> _pickBarangayClearance() async {
     final imageBase64 = await ImageService.showImageSourceDialog(context);
     if (imageBase64 != null) {
       setState(() {
-        _nbiClearanceBase64 = imageBase64;
+        _barangayClearanceBase64 = imageBase64;
       });
     }
   }
@@ -87,14 +149,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password: _passwordController.text,
           userType: widget.userType,
           photoUrl: _profileImageBase64,
-          nbiClearance: _nbiClearanceBase64,
+          barangayClearance: _barangayClearanceBase64,
           skills: skills,
           experience:
               widget.userType == UserType.helper ? _selectedExperience : null,
           address:
-              widget.userType == UserType.employer
-                  ? _addressController.text
-                  : null,
+              widget.userType == UserType.employer ? _selectedLocation : null,
         );
 
         if (mounted) {
@@ -255,14 +315,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _buildTextField(
                         controller: _phoneController,
                         labelText: 'Phone Number',
-                        hintText: 'Enter your phone number',
+                        hintText: '+63 1234567890',
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
+                        focusNode: _phoneFocusNode,
+                        inputFormatters: [PhilippinePhoneFormatter()],
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null ||
+                              value.isEmpty ||
+                              value == '+63 ') {
                             return 'Please enter your phone number';
-                          } else if (value.length < 10) {
-                            return 'Please enter a valid phone number';
+                          } else if (value.length != 14) {
+                            // +63 + space + 10 digits
+                            return 'Please enter exactly 10 digits after +63';
                           }
                           return null;
                         },
@@ -310,12 +375,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                       // Employer-specific fields
                       if (widget.userType == UserType.employer) ...[
-                        _buildTextField(
-                          controller: _addressController,
-                          labelText: 'Address',
-                          hintText: 'Enter your address',
-                          prefixIcon: Icons.location_on_outlined,
-                        ),
+                        _buildLocationDropdown(),
                         const SizedBox(height: 20),
                       ],
                       // NBI Clearance Upload Button - show for both user types
@@ -330,7 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Column(
                           children: [
                             Text(
-                              'NBI Clearance Upload',
+                              'Barangay Clearance Upload',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -338,7 +398,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            _nbiClearanceBase64 != null
+                            _barangayClearanceBase64 != null
                                 ? Container(
                                   width: 200,
                                   height: 120,
@@ -351,7 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: ImageService.base64ToImage(
-                                      _nbiClearanceBase64,
+                                      _barangayClearanceBase64,
                                       fit: BoxFit.cover,
                                     ),
                                   ),
@@ -363,7 +423,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                             const SizedBox(height: 12),
                             ElevatedButton.icon(
-                              onPressed: _pickNBIClearance,
+                              onPressed: _pickBarangayClearance,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     Theme.of(context).colorScheme.primary,
@@ -371,16 +431,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               icon: const Icon(Icons.upload_file),
                               label: Text(
-                                _nbiClearanceBase64 != null
-                                    ? 'Change NBI Clearance'
-                                    : 'Upload NBI Clearance',
+                                _barangayClearanceBase64 != null
+                                    ? 'Change Barangay Clearance'
+                                    : 'Upload Barangay Clearance',
                               ),
                             ),
-                            if (_nbiClearanceBase64 == null)
+                            if (_barangayClearanceBase64 == null)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(
-                                  'NBI Clearance is required for verification',
+                                  'Barangay Clearance is required for verification',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -482,14 +542,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _isLoading || !_acceptTerms
                                   ? null
                                   : () {
-                                    // For both Helper and Employer, require NBI Clearance
-                                    if (_nbiClearanceBase64 == null) {
+                                    // For both Helper and Employer, require Barangay Clearance
+                                    if (_barangayClearanceBase64 == null) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                            'Please upload your NBI Clearance',
+                                            'Please upload your Barangay Clearance',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    // For Employer, require location selection
+                                    if (widget.userType == UserType.employer &&
+                                        _selectedLocation == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please select your location in Bohol',
                                           ),
                                         ),
                                       );
@@ -586,11 +661,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
+    FocusNode? focusNode,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      focusNode: focusNode,
+      inputFormatters: inputFormatters,
       style: const TextStyle(color: Colors.black87),
       decoration: InputDecoration(
         labelText: labelText,
@@ -679,6 +758,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
             );
           }).toList(),
       onChanged: onChanged,
+    );
+  }
+
+  Widget _buildLocationDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedLocation,
+      decoration: InputDecoration(
+        labelText: 'Location in Bohol',
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+        hintText: 'Select your municipality/city',
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        prefixIcon: Icon(
+          Icons.location_on_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+      ),
+      icon: Icon(
+        Icons.arrow_drop_down,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      dropdownColor: Colors.white,
+      style: const TextStyle(color: Colors.black87),
+      items:
+          BoholLocations.allLocations.map((String location) {
+            return DropdownMenuItem<String>(
+              value: location,
+              child: Row(
+                children: [
+                  Text(location, style: const TextStyle(color: Colors.black87)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '(${BoholLocations.getLocationType(location)})',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+      onChanged: (String? value) {
+        setState(() {
+          _selectedLocation = value;
+        });
+      },
+      validator: (value) {
+        if (widget.userType == UserType.employer && value == null) {
+          return 'Please select your location';
+        }
+        return null;
+      },
     );
   }
 }

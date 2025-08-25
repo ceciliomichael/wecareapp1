@@ -18,10 +18,10 @@ class HelperProfileScreen extends StatefulWidget {
   final bool isCurrentUser;
 
   const HelperProfileScreen({
-    Key? key,
+    super.key,
     required this.helper,
     this.isCurrentUser = false,
-  }) : super(key: key);
+  });
 
   @override
   State<HelperProfileScreen> createState() => _HelperProfileScreenState();
@@ -37,7 +37,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
   bool _isEditing = false;
   bool _isSaving = false;
   String? _photoUrl;
-  String? _nbiClearance;
+  String? _barangayClearance;
   late bool _isActive;
   List<Job> _postedServices = [];
   bool _loadingServices = true;
@@ -60,7 +60,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
     );
     _skills = List<String>.from(widget.helper.skills ?? []);
     _photoUrl = widget.helper.photoUrl;
-    _nbiClearance = widget.helper.nbiClearance;
+    _barangayClearance = widget.helper.barangayClearance;
     _isActive = widget.helper.isActive;
     _loadPostedServices();
     _loadReviews();
@@ -95,9 +95,11 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
         setState(() {
           _loadingServices = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading services: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error loading services: $e')));
+        }
       }
     }
   }
@@ -154,7 +156,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
         phone: _phoneController.text,
         userType: widget.helper.userType,
         photoUrl: _photoUrl,
-        nbiClearance: _nbiClearance,
+        barangayClearance: _barangayClearance,
         skills: _skills,
         experience: _experienceController.text,
         password: widget.helper.password,
@@ -201,25 +203,29 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
           _isSaving = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isActive
-                  ? 'Your profile is now visible to employers'
-                  : 'Your profile is now hidden from employers',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _isActive
+                    ? 'Your profile is now visible to employers'
+                    : 'Your profile is now hidden from employers',
+              ),
+              backgroundColor: _isActive ? Colors.green : Colors.grey,
             ),
-            backgroundColor: _isActive ? Colors.green : Colors.grey,
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isSaving = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error updating status: $e')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error updating status: $e')));
+        }
       }
     }
   }
@@ -241,25 +247,27 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
     }
   }
 
-  Future<void> _pickNBIClearance() async {
+  Future<void> _pickBarangayClearance() async {
     try {
       final base64Image = await ImageService.pickImageAsBase64();
       if (base64Image != null) {
         setState(() {
-          _nbiClearance = base64Image;
+          _barangayClearance = base64Image;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'NBI Clearance updated. Save your profile to apply changes.',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Barangay Clearance updated. Save your profile to apply changes.',
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking NBI clearance: $e')),
+          SnackBar(content: Text('Error picking Barangay clearance: $e')),
         );
       }
     }
@@ -620,9 +628,10 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                   _skills.map((skill) {
                                     return Chip(
                                       label: Text(skill),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.1),
                                       deleteIcon:
                                           _isEditing
                                               ? const Icon(
@@ -713,7 +722,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // NBI Clearance Section
+                    // Barangay Clearance Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -725,14 +734,14 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'NBI Clearance',
+                              'Barangay Clearance',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 16),
-                            if (_nbiClearance != null)
+                            if (_barangayClearance != null)
                               Column(
                                 children: [
                                   Container(
@@ -742,7 +751,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       image: DecorationImage(
                                         image: MemoryImage(
-                                          base64Decode(_nbiClearance!),
+                                          base64Decode(_barangayClearance!),
                                         ),
                                         fit: BoxFit.cover,
                                       ),
@@ -751,9 +760,9 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                   if (_isEditing) ...[
                                     const SizedBox(height: 8),
                                     TextButton.icon(
-                                      onPressed: _pickNBIClearance,
+                                      onPressed: _pickBarangayClearance,
                                       icon: const Icon(Icons.refresh),
-                                      label: const Text('Update NBI Clearance'),
+                                      label: const Text('Update Barangay Clearance'),
                                     ),
                                   ],
                                 ],
@@ -769,16 +778,16 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     const Text(
-                                      'No NBI Clearance Uploaded',
+                                      'No Barangay Clearance Uploaded',
                                       style: TextStyle(color: Colors.grey),
                                     ),
                                     if (_isEditing) ...[
                                       const SizedBox(height: 16),
                                       ElevatedButton.icon(
-                                        onPressed: _pickNBIClearance,
+                                        onPressed: _pickBarangayClearance,
                                         icon: const Icon(Icons.upload),
                                         label: const Text(
-                                          'Upload NBI Clearance',
+                                          'Upload Barangay Clearance',
                                         ),
                                       ),
                                     ],
@@ -808,7 +817,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                     widget.helper.skills ?? [],
                                   );
                                   _photoUrl = widget.helper.photoUrl;
-                                  _nbiClearance = widget.helper.nbiClearance;
+                                  _barangayClearance = widget.helper.barangayClearance;
                                 });
                               },
                               child: const Text('Cancel'),
@@ -927,7 +936,7 @@ class _HelperProfileScreenState extends State<HelperProfileScreen> {
                                   alignment: Alignment.centerRight,
                                   child: TextButton.icon(
                                     onPressed: () {
-                                      // TODO: Navigate to full reviews page
+                                      // Navigate to full reviews page (to be implemented)
                                     },
                                     icon: const Icon(Icons.arrow_forward),
                                     label: const Text('See all reviews'),

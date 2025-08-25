@@ -28,7 +28,7 @@ class Job {
     required this.isActive,
     required this.requiredSkills,
     List<String>? savedByUserIds,
-  }) : this.savedByUserIds = savedByUserIds ?? [];
+  }) : savedByUserIds = savedByUserIds ?? [];
 
   // Create a copy with updated fields
   Job copyWith({

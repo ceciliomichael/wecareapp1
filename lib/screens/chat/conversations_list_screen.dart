@@ -7,28 +7,23 @@ import '../../models/job.dart';
 import '../../services/message_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/job_service.dart';
-import '../../services/auth_service.dart';
 import '../../components/chat/conversation_tile.dart';
 import 'chat_screen.dart';
 
 class ConversationsListScreen extends StatefulWidget {
   final User currentUser;
 
-  const ConversationsListScreen({Key? key, required this.currentUser})
-    : super(key: key);
+  const ConversationsListScreen({super.key, required this.currentUser});
 
   @override
-  _ConversationsListScreenState createState() =>
-      _ConversationsListScreenState();
+  ConversationsListScreenState createState() => ConversationsListScreenState();
 }
 
-class _ConversationsListScreenState extends State<ConversationsListScreen> {
+class ConversationsListScreenState extends State<ConversationsListScreen> {
   final MessageService _messageService = MessageService();
-  final _jobService = JobService();
-  final _authService = AuthService();
-  
+
   List<Conversation> _conversations = [];
-  Map<String, Job> _jobCache = {};
+  final Map<String, Job> _jobCache = {};
   Map<String, User> _userCache = {};
   bool _isLoading = true;
   Timer? _refreshTimer;
@@ -37,13 +32,13 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
   void initState() {
     super.initState();
     _loadConversations();
-    
+
     // Set up timer to refresh user status every 30 seconds
     _refreshTimer = Timer.periodic(Duration(seconds: 30), (_) {
       _refreshUserStatuses();
     });
   }
-  
+
   @override
   void dispose() {
     _refreshTimer?.cancel();
@@ -75,21 +70,23 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading conversations: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading conversations: $e')),
+        );
+      }
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
   }
-  
+
   Future<void> _refreshUserStatuses() async {
     try {
       final updatedUserCache = <String, User>{};
       final users = await StorageService.getUsers();
-      
+
       for (final userId in _userCache.keys) {
         final updatedUser = users.firstWhere(
           (u) => u.id == userId,
@@ -97,14 +94,14 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
         );
         updatedUserCache[userId] = updatedUser;
       }
-      
+
       if (mounted) {
         setState(() {
           _userCache = updatedUserCache;
         });
       }
     } catch (e) {
-      print('Error refreshing user statuses: $e');
+      debugPrint('Error refreshing user statuses: $e');
     }
   }
 
@@ -119,7 +116,7 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
         });
       }
     } catch (e) {
-      print('Error loading job data: $e');
+      debugPrint('Error loading job data: $e');
     }
   }
 
@@ -145,7 +142,7 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
         _userCache[userId] = user;
       });
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
     }
   }
 
@@ -175,7 +172,7 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Messages'), 
+        title: Text('Messages'),
         backgroundColor: Colors.teal,
         actions: [
           IconButton(
@@ -261,21 +258,25 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
       widget.currentUser.id,
     );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => ChatScreen(
-              conversation: conversation,
-              currentUser: widget.currentUser,
-              otherUser: otherUser,
-              jobTitle: jobTitle,
-            ),
-      ),
-    ).then((_) {
-      // Refresh the list when returning from chat screen
-      _loadConversations();
-      _refreshUserStatuses();
-    });
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ChatScreen(
+                conversation: conversation,
+                currentUser: widget.currentUser,
+                otherUser: otherUser,
+                jobTitle: jobTitle,
+              ),
+        ),
+      ).then((_) {
+        // Refresh the list when returning from chat screen
+        if (mounted) {
+          _loadConversations();
+          _refreshUserStatuses();
+        }
+      });
+    }
   }
 }

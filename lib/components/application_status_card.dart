@@ -10,11 +10,11 @@ class ApplicationStatusCard extends StatelessWidget {
   final User helper;
 
   const ApplicationStatusCard({
-    Key? key,
+    super.key,
     required this.application,
     required this.job,
     required this.helper,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +66,7 @@ class ApplicationStatusCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

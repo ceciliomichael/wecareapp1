@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/review.dart';
@@ -13,12 +12,12 @@ class ReviewCard extends StatefulWidget {
   final VoidCallback? onTap;
 
   const ReviewCard({
-    Key? key,
+    super.key,
     required this.review,
     this.isCompact = false,
     this.showCategoryRatings = false,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<ReviewCard> createState() => _ReviewCardState();
@@ -184,6 +183,7 @@ class _ReviewCardState extends State<ReviewCard> {
     } else {
       return CircleAvatar(
         backgroundColor: Colors.teal.shade200,
+        radius: 20,
         child: Text(
           _reviewer?.name.isNotEmpty == true
               ? _reviewer!.name[0].toUpperCase()
@@ -193,7 +193,6 @@ class _ReviewCardState extends State<ReviewCard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        radius: 20,
       );
     }
   }

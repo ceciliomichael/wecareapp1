@@ -8,11 +8,11 @@ class SavedJobCard extends StatelessWidget {
   final VoidCallback onUnsave;
 
   const SavedJobCard({
-    Key? key,
+    super.key,
     required this.job,
     required this.onTap,
     required this.onUnsave,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +88,10 @@ class SavedJobCard extends StatelessWidget {
                                         skill,
                                         style: const TextStyle(fontSize: 10),
                                       ),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                       materialTapTargetSize:
                                           MaterialTapTargetSize.shrinkWrap,

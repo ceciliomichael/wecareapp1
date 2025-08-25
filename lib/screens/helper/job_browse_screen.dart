@@ -3,13 +3,12 @@ import '../../models/user.dart';
 import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
-import '../../components/job_section_header.dart';
 import '../../components/saved_job_card.dart';
 
 class JobBrowseScreen extends StatefulWidget {
   final User helper;
 
-  const JobBrowseScreen({Key? key, required this.helper}) : super(key: key);
+  const JobBrowseScreen({super.key, required this.helper});
 
   @override
   State<JobBrowseScreen> createState() => _JobBrowseScreenState();
@@ -448,9 +447,10 @@ class _JobBrowseScreenState extends State<JobBrowseScreen>
                                         skill,
                                         style: const TextStyle(fontSize: 10),
                                       ),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.1),
                                       padding: EdgeInsets.zero,
                                       materialTapTargetSize:
                                           MaterialTapTargetSize.shrinkWrap,
@@ -492,8 +492,7 @@ class JobDetailScreen extends StatelessWidget {
   final Job job;
   final User helper;
 
-  const JobDetailScreen({Key? key, required this.job, required this.helper})
-    : super(key: key);
+  const JobDetailScreen({super.key, required this.job, required this.helper});
 
   @override
   Widget build(BuildContext context) {
@@ -547,7 +546,7 @@ class JobDetailScreen extends StatelessWidget {
                       label: Text(skill),
                       backgroundColor: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.1),
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     );
                   }).toList(),
@@ -605,8 +604,7 @@ class ApplyJobScreen extends StatefulWidget {
   final Job job;
   final User helper;
 
-  const ApplyJobScreen({Key? key, required this.job, required this.helper})
-    : super(key: key);
+  const ApplyJobScreen({super.key, required this.job, required this.helper});
 
   @override
   State<ApplyJobScreen> createState() => _ApplyJobScreenState();
