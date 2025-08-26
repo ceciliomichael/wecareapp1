@@ -3,6 +3,7 @@ import '../../models/user.dart';
 import '../../models/job.dart';
 import '../../models/salary_type.dart';
 import '../../services/job_service.dart';
+import '../../constants/bohol_locations.dart';
 
 class PostServiceScreen extends StatefulWidget {
   final User helper;
@@ -25,7 +26,8 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _salaryController;
-  late TextEditingController _locationController;
+
+  String? _selectedLocation;
 
   // For skills input
   final TextEditingController _skillController = TextEditingController();
@@ -52,12 +54,10 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
     _salaryController = TextEditingController(
       text: _isEditing ? widget.existingService!.salary.toString() : '',
     );
-    _locationController = TextEditingController(
-      text: _isEditing ? widget.existingService!.location : '',
-    );
 
-    // Initialize skills list if editing
+    // Initialize location and skills list if editing
     if (_isEditing) {
+      _selectedLocation = widget.existingService!.location;
       _skills.addAll(widget.existingService!.requiredSkills);
       _selectedSalaryType = widget.existingService!.salaryType;
     }
@@ -68,7 +68,6 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _salaryController.dispose();
-    _locationController.dispose();
     _skillController.dispose();
     super.dispose();
   }
@@ -101,7 +100,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
             salaryType: _selectedSalaryType,
-            location: _locationController.text,
+            location: _selectedLocation!,
             requiredSkills: _skills,
           );
 
@@ -114,7 +113,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
             description: _descriptionController.text,
             salary: double.parse(_salaryController.text),
             salaryType: _selectedSalaryType,
-            location: _locationController.text,
+            location: _selectedLocation!,
             requiredSkills: _skills,
             postedByHelper:
                 true, // This is what distinguishes a helper-posted service
@@ -257,17 +256,42 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Location field
-              TextFormField(
-                controller: _locationController,
+              // Location dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedLocation,
                 decoration: const InputDecoration(
-                  labelText: 'Service Location',
-                  hintText: 'e.g., Tagbilaran City, Bohol',
+                  labelText: 'Barangay in Tagbilaran City',
+                  hintText: 'Select barangay',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
+                items:
+                    BoholLocations.allLocations.map((String barangay) {
+                      return DropdownMenuItem<String>(
+                        value: barangay,
+                        child: Row(
+                          children: [
+                            Text('Brgy. $barangay'),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${BoholLocations.getLocationType(barangay)})',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedLocation = value;
+                  });
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter service location';
+                    return 'Please select a barangay';
                   }
                   return null;
                 },

@@ -143,20 +143,20 @@ class _BoholMapWidgetState extends State<BoholMapWidget> {
               Text(
                 'Coordinates: ${coordinates.latitude.toStringAsFixed(4)}, ${coordinates.longitude.toStringAsFixed(4)}',
               ),
-              if (BoholLocations.touristDestinations.contains(location)) ...[
+              if (BoholLocations.isBusinessDistrict(location)) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  '🏖️ Tourist Destination',
+                  '🏢 Business District',
                   style: TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
-              if (BoholLocations.coastalAreas.contains(location)) ...[
+              if (BoholLocations.isResidentialArea(location)) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  '🌊 Coastal Area',
+                  '🏠 Residential Area',
                   style: TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.bold,

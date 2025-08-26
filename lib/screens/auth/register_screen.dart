@@ -859,7 +859,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       return;
                                     }
 
-                                    // For Employer, require location selection
+                                    // For Employer, require barangay selection
                                     if (widget.userType == UserType.employer &&
                                         _selectedLocation == null) {
                                       ScaffoldMessenger.of(
@@ -867,7 +867,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                            'Please select your location in Bohol',
+                                            'Please select your barangay in Tagbilaran City',
                                           ),
                                         ),
                                       );
@@ -1068,9 +1068,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return DropdownButtonFormField<String>(
       value: _selectedLocation,
       decoration: InputDecoration(
-        labelText: 'Location in Bohol',
+        labelText: 'Barangay in Tagbilaran City',
         labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-        hintText: 'Select your municipality/city',
+        hintText: 'Select your barangay',
         hintStyle: TextStyle(color: Colors.grey[400]),
         prefixIcon: Icon(
           Icons.location_on_outlined,
@@ -1101,15 +1101,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       dropdownColor: Colors.white,
       style: const TextStyle(color: Colors.black87),
       items:
-          BoholLocations.allLocations.map((String location) {
+          BoholLocations.allLocations.map((String barangay) {
             return DropdownMenuItem<String>(
-              value: location,
+              value: barangay,
               child: Row(
                 children: [
-                  Text(location, style: const TextStyle(color: Colors.black87)),
+                  Text('Brgy. $barangay', style: const TextStyle(color: Colors.black87)),
                   const SizedBox(width: 4),
                   Text(
-                    '(${BoholLocations.getLocationType(location)})',
+                    '(${BoholLocations.getLocationType(barangay)})',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
@@ -1123,7 +1123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
       validator: (value) {
         if (widget.userType == UserType.employer && value == null) {
-          return 'Please select your location';
+          return 'Please select your barangay';
         }
         return null;
       },

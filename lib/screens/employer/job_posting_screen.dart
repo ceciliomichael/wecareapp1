@@ -256,21 +256,21 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
               DropdownButtonFormField<String>(
                 value: _selectedLocation,
                 decoration: const InputDecoration(
-                  labelText: 'Location in Bohol',
-                  hintText: 'Select municipality/city',
+                  labelText: 'Barangay in Tagbilaran City',
+                  hintText: 'Select barangay',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
                 items:
-                    BoholLocations.allLocations.map((String location) {
+                    BoholLocations.allLocations.map((String barangay) {
                       return DropdownMenuItem<String>(
-                        value: location,
+                        value: barangay,
                         child: Row(
                           children: [
-                            Text(location),
+                            Text('Brgy. $barangay'),
                             const SizedBox(width: 4),
                             Text(
-                              '(${BoholLocations.getLocationType(location)})',
+                              '(${BoholLocations.getLocationType(barangay)})',
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -287,7 +287,7 @@ class _JobPostingScreenState extends State<JobPostingScreen> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please select a location';
+                    return 'Please select a barangay';
                   }
                   return null;
                 },

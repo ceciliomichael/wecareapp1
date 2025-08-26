@@ -1,135 +1,107 @@
-/// Bohol Province Locations
-/// Contains all municipalities and the city in Bohol, Philippines
+/// Tagbilaran City Locations
+/// Contains barangays in Tagbilaran City, Bohol, Philippines
 class BoholLocations {
   /// Main city in Bohol (provincial capital)
   static const String tagbilaranCity = 'Tagbilaran City';
 
-  /// All municipalities in Bohol (alphabetically ordered)
-  static const List<String> municipalities = [
-    'Alburquerque',
-    'Alicia',
-    'Anda',
-    'Antequera',
-    'Baclayon',
-    'Balilihan',
-    'Batuan',
-    'Bien Unido',
-    'Bilar',
-    'Buenavista',
-    'Calape',
-    'Candijay',
-    'Carmen',
-    'Catigbian',
-    'Clarin',
-    'Corella',
-    'Cortes',
-    'Dagohoy',
-    'Danao',
-    'Dauis',
-    'Dimiao',
-    'Duero',
-    'Garcia Hernandez',
-    'Getafe',
-    'Guindulman',
-    'Inabanga',
-    'Jagna',
-    'Lila',
-    'Loay',
-    'Loboc',
-    'Loon',
-    'Mabini',
-    'Maribojoc',
-    'Panglao',
-    'Pilar',
-    'President Carlos P. Garcia',
-    'Sagbayan',
+  /// All barangays in Tagbilaran City (alphabetically ordered)
+  static const List<String> barangays = [
+    'Bool',
+    'Booy',
+    'Cabawan',
+    'Cogon',
+    'Dampas',
+    'Dao',
+    'Manga',
+    'Mansasa',
+    'Poblacion I',
+    'Poblacion II',
+    'Poblacion III',
     'San Isidro',
-    'San Miguel',
-    'Sevilla',
-    'Sierra Bullones',
-    'Sikatuna',
-    'Talibon',
-    'Trinidad',
-    'Tubigon',
-    'Ubay',
-    'Valencia',
+    'Taloto',
+    'Tiptip',
+    'Ubujan',
   ];
 
-  /// Complete list of all locations (city + municipalities)
+  /// Complete list of all locations (barangays in Tagbilaran City)
   static List<String> get allLocations {
-    return [tagbilaranCity, ...municipalities]..sort();
+    return barangays.toList()..sort();
   }
 
-  /// Popular/Major locations for quick selection
+  /// Popular/Central barangays for quick selection
   static const List<String> popularLocations = [
-    'Tagbilaran City',
-    'Panglao',
-    'Tubigon',
-    'Jagna',
-    'Talibon',
-    'Ubay',
-    'Loon',
-    'Carmen',
-    'Dauis',
-    'Baclayon',
+    'Poblacion I',
+    'Poblacion II',
+    'Poblacion III',
+    'Cogon',
+    'Mansasa',
+    'Dao',
+    'Bool',
+    'Booy',
   ];
 
-  /// Tourist destination municipalities
-  static const List<String> touristDestinations = [
-    'Panglao',
-    'Loboc',
-    'Carmen', // Chocolate Hills
-    'Loon',
-    'Baclayon',
-    'Corella',
-    'Alburquerque',
-    'Antequera',
+  /// Business district barangays
+  static const List<String> businessDistrict = [
+    'Poblacion I',
+    'Poblacion II',
+    'Poblacion III',
+    'Cogon',
+    'Dao',
   ];
 
-  /// Coastal municipalities (for maritime-related jobs)
-  static const List<String> coastalAreas = [
-    'Tagbilaran City',
-    'Panglao',
-    'Dauis',
-    'Baclayon',
-    'Loon',
-    'Maribojoc',
-    'Tubigon',
-    'Getafe',
-    'Talibon',
-    'Bien Unido',
-    'Trinidad',
-    'Ubay',
-    'President Carlos P. Garcia',
-    'Candijay',
-    'Anda',
-    'Guindulman',
-    'Jagna',
+  /// Residential barangays
+  static const List<String> residentialAreas = [
+    'Mansasa',
+    'Bool',
+    'Booy',
+    'Cabawan',
+    'Dampas',
+    'Manga',
+    'San Isidro',
+    'Taloto',
+    'Tiptip',
+    'Ubujan',
   ];
 
-  /// Check if a location is valid in Bohol
-  static bool isValidLocation(String location) {
-    return allLocations.contains(location);
+  /// Check if a barangay is valid in Tagbilaran City
+  static bool isValidLocation(String barangay) {
+    return barangays.contains(barangay);
   }
 
-  /// Get location type (City or Municipality)
+  /// Get location type (always Barangay for this implementation)
   static String getLocationType(String location) {
-    if (location == tagbilaranCity) {
-      return 'City';
-    } else if (municipalities.contains(location)) {
-      return 'Municipality';
+    if (barangays.contains(location)) {
+      return 'Barangay';
     } else {
       return 'Unknown';
     }
   }
 
-  /// Search locations by query
+  /// Get full address format
+  static String getFullAddress(String barangay) {
+    if (isValidLocation(barangay)) {
+      return 'Barangay $barangay, $tagbilaranCity, Bohol';
+    }
+    return barangay;
+  }
+
+  /// Search barangays by query
   static List<String> searchLocations(String query) {
     if (query.isEmpty) return allLocations;
 
     final lowercaseQuery = query.toLowerCase();
     return allLocations
-        .where((location) => location.toLowerCase().contains(lowercaseQuery))
+        .where((barangay) => barangay.toLowerCase().contains(lowercaseQuery))
         .toList();
+  }
+
+  /// Check if barangay is in business district
+  static bool isBusinessDistrict(String barangay) {
+    return businessDistrict.contains(barangay);
+  }
+
+  /// Check if barangay is primarily residential
+  static bool isResidentialArea(String barangay) {
+    return residentialAreas.contains(barangay);
   }
 }
