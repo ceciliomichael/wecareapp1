@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/user_type.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
+import '../../services/barangay_clearance_validator.dart';
 import '../../constants/bohol_locations.dart';
 import 'login_screen.dart';
 
@@ -76,6 +77,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
   bool _isLoading = false;
+  bool _isValidatingDocument = false;
+  BarangayClearanceValidationResult? _validationResult;
 
   // Focus node for phone number field
   final FocusNode _phoneFocusNode = FocusNode();
@@ -123,7 +126,171 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (imageBase64 != null) {
       setState(() {
         _barangayClearanceBase64 = imageBase64;
+        _validationResult = null; // Reset validation result
+        _isValidatingDocument = true;
       });
+
+      // Validate the document
+      try {
+        final result = await BarangayClearanceValidator.validateDocument(imageBase64);
+        
+        if (mounted) {
+          setState(() {
+            _validationResult = result;
+            _isValidatingDocument = false;
+          });
+
+          // Show validation result
+          if (result.isValid) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // Show error dialog with detailed information
+            _showValidationErrorDialog(result);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isValidatingDocument = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Validation failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Show validation error dialog
+  void _showValidationErrorDialog(BarangayClearanceValidationResult result) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Document Validation'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  result.message,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (result.errors.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Issues found:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...result.errors.map((error) => Padding(
+                    padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ', style: TextStyle(color: Colors.red)),
+                        Expanded(child: Text(error)),
+                      ],
+                    ),
+                  )),
+                ],
+                if (result.warnings.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Warnings:',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                  ),
+                  const SizedBox(height: 8),
+                  ...result.warnings.map((warning) => Padding(
+                    padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ', style: TextStyle(color: Colors.orange)),
+                        Expanded(child: Text(warning)),
+                      ],
+                    ),
+                  )),
+                ],
+                const SizedBox(height: 16),
+                const Text(
+                  'Please ensure your document meets all requirements and try uploading again.',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+            if (BarangayClearanceValidator.shouldRetryValidation(result))
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _retryValidation();
+                },
+                child: const Text('Retry Validation'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Retry validation
+  Future<void> _retryValidation() async {
+    if (_barangayClearanceBase64 == null) return;
+
+    setState(() {
+      _isValidatingDocument = true;
+      _validationResult = null;
+    });
+
+    try {
+      final result = await BarangayClearanceValidator.validateDocument(_barangayClearanceBase64);
+      
+      if (mounted) {
+        setState(() {
+          _validationResult = result;
+          _isValidatingDocument = false;
+        });
+
+        if (result.isValid) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          _showValidationErrorDialog(result);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isValidatingDocument = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Validation failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -387,68 +554,189 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey[300]!),
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Barangay Clearance Upload',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _barangayClearanceBase64 != null
-                                ? Container(
-                                  width: 200,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey[400]!,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: ImageService.base64ToImage(
-                                      _barangayClearanceBase64,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                )
-                                : Icon(
-                                  Icons.description,
-                                  size: 60,
-                                  color: Colors.grey[400],
-                                ),
-                            const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: _pickBarangayClearance,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                              icon: const Icon(Icons.upload_file),
-                              label: Text(
-                                _barangayClearanceBase64 != null
-                                    ? 'Change Barangay Clearance'
-                                    : 'Upload Barangay Clearance',
-                              ),
-                            ),
-                            if (_barangayClearanceBase64 == null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(
-                                  'Barangay Clearance is required for verification',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
+                                                  child: Column(
+                            children: [
+                              Text(
+                                'Barangay Clearance Upload',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
-                          ],
-                        ),
+                              const SizedBox(height: 12),
+                              _barangayClearanceBase64 != null
+                                  ? Container(
+                                    width: 200,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: _validationResult?.isValid == true 
+                                            ? Colors.green 
+                                            : _validationResult != null 
+                                                ? Colors.red 
+                                                : Colors.grey[400]!,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: ImageService.base64ToImage(
+                                            _barangayClearanceBase64,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                        ),
+                                        if (_validationResult?.isValid == true)
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.green,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.check,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        if (_validationResult != null && !_validationResult!.isValid)
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.red,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.error,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        if (_isValidatingDocument)
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.black54,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  )
+                                  : Icon(
+                                    Icons.description,
+                                    size: 60,
+                                    color: Colors.grey[400],
+                                  ),
+                              const SizedBox(height: 12),
+                              if (_isValidatingDocument)
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 12.0),
+                                  child: Text(
+                                    'Validating document...',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                              if (_validationResult != null && !_isValidatingDocument)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        _validationResult!.isValid ? Icons.check_circle : Icons.error,
+                                        size: 16,
+                                        color: _validationResult!.isValid ? Colors.green : Colors.red,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          _validationResult!.isValid 
+                                              ? 'Document validated successfully'
+                                              : 'Document validation failed',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: _validationResult!.isValid ? Colors.green : Colors.red,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ElevatedButton.icon(
+                                onPressed: _isValidatingDocument ? null : _pickBarangayClearance,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: Colors.grey[300],
+                                ),
+                                icon: _isValidatingDocument 
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : const Icon(Icons.upload_file),
+                                label: Text(
+                                  _isValidatingDocument 
+                                      ? 'Validating...'
+                                      : _barangayClearanceBase64 != null
+                                          ? 'Change Barangay Clearance'
+                                          : 'Upload Barangay Clearance',
+                                ),
+                              ),
+                              if (_barangayClearanceBase64 == null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    'Barangay Clearance is required for verification',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              if (_validationResult != null && _validationResult!.warnings.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    _validationResult!.warnings.first,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.orange,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                            ],
+                          ),
                       ),
                       const SizedBox(height: 20),
                       // Password Field
@@ -538,8 +826,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed:
-                              _isLoading || !_acceptTerms
+                                                            onPressed:
+                              _isLoading || !_acceptTerms || _isValidatingDocument
                                   ? null
                                   : () {
                                     // For both Helper and Employer, require Barangay Clearance
@@ -551,6 +839,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           content: Text(
                                             'Please upload your Barangay Clearance',
                                           ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    // Check if document validation passed
+                                    if (_validationResult == null || !_validationResult!.isValid) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please upload a valid Barangay Clearance document',
+                                          ),
+                                          backgroundColor: Colors.red,
                                         ),
                                       );
                                       return;
