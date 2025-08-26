@@ -6,27 +6,53 @@ import 'services/notification_service.dart';
 import 'services/subscription_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Load environment configuration
   try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    // .env file not found, using default values
-    debugPrint('Warning: .env file not found, using default configuration');
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('WeCare App: Flutter binding initialized');
+
+    // Load environment configuration
+    try {
+      await dotenv.load(fileName: ".env");
+      debugPrint('WeCare App: Environment configuration loaded successfully');
+    } catch (e) {
+      // .env file not found, using default values
+      debugPrint('WeCare App: Warning - .env file not found, using default configuration: $e');
+    }
+
+    // Initialize services with error handling
+    try {
+      await NotificationService.initialize();
+      debugPrint('WeCare App: Notification service initialized successfully');
+    } catch (e) {
+      debugPrint('WeCare App: Warning - Notification service failed to initialize: $e');
+    }
+
+    try {
+      await SubscriptionService.initializeDefaultPlans();
+      debugPrint('WeCare App: Subscription service initialized successfully');
+    } catch (e) {
+      debugPrint('WeCare App: Warning - Subscription service failed to initialize: $e');
+    }
+
+    // Set preferred orientations
+    try {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      debugPrint('WeCare App: Screen orientation preferences set');
+    } catch (e) {
+      debugPrint('WeCare App: Warning - Failed to set screen orientation: $e');
+    }
+
+    debugPrint('WeCare App: Starting app...');
+    runApp(const WeCareApp());
+  } catch (e, stackTrace) {
+    debugPrint('WeCare App: Critical error during app initialization: $e');
+    debugPrint('Stack trace: $stackTrace');
+    // Still try to run the app with minimal configuration
+    runApp(const WeCareApp());
   }
-
-  // Initialize services
-  await NotificationService.initialize();
-  await SubscriptionService.initializeDefaultPlans();
-
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const WeCareApp());
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -36,6 +62,8 @@ class WeCareApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('WeCareApp: Building material app...');
+    
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'WeCare',
@@ -53,45 +81,7 @@ class WeCareApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // Set this to false to prevent accidental app exits with back button
-      home: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop) return;
-
-          final currentContext = navigatorKey.currentContext;
-          if (currentContext == null) return;
-
-          // Show an exit confirmation dialog when back button is pressed at the root
-          final shouldPop =
-              await showDialog<bool>(
-                context: currentContext,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Exit App?'),
-                      content: const Text(
-                        'Are you sure you want to exit the app?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('No'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Yes'),
-                        ),
-                      ],
-                    ),
-              ) ??
-              false;
-
-          if (shouldPop && navigatorKey.currentContext != null) {
-            Navigator.of(navigatorKey.currentContext!).pop();
-          }
-        },
-        child: const SplashScreen(),
-      ),
+      home: const SplashScreen(),
     );
   }
 }

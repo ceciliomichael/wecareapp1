@@ -8,30 +8,41 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
-    tz_data.initializeTimeZones();
+    try {
+      debugPrint('NotificationService: Initializing timezone data...');
+      tz_data.initializeTimeZones();
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
+      debugPrint('NotificationService: Setting up Android initialization settings...');
+      // Use '@mipmap/ic_launcher' which is the default Flutter app icon
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: null,
-        );
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+            android: initializationSettingsAndroid,
+            iOS: null,
+          );
 
-    await _notificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (
-        NotificationResponse notificationResponse,
-      ) {
-        // Handle notification tap
-        final String? payload = notificationResponse.payload;
-        if (payload != null) {
-          debugPrint('Notification payload: $payload');
-          // You can navigate to a specific screen here based on the payload
-        }
-      },
-    );
+      debugPrint('NotificationService: Initializing notification plugin...');
+      await _notificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (
+          NotificationResponse notificationResponse,
+        ) {
+          // Handle notification tap
+          final String? payload = notificationResponse.payload;
+          if (payload != null) {
+            debugPrint('Notification payload: $payload');
+            // You can navigate to a specific screen here based on the payload
+          }
+        },
+      );
+      debugPrint('NotificationService: Successfully initialized');
+    } catch (e, stackTrace) {
+      debugPrint('NotificationService: Failed to initialize - $e');
+      debugPrint('Stack trace: $stackTrace');
+      // Don't rethrow the error to prevent app crash
+    }
   }
 
   static Future<void> showNotification({

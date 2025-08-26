@@ -262,7 +262,7 @@ class _PostServiceScreenState extends State<PostServiceScreen> {
                 controller: _locationController,
                 decoration: const InputDecoration(
                   labelText: 'Service Location',
-                  hintText: 'e.g., Makati City, Manila',
+                  hintText: 'e.g., Tagbilaran City, Bohol',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
